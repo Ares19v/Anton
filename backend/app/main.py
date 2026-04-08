@@ -5,8 +5,7 @@ from typing import List, Optional
 from . import models, database, schemas, crud, processor
 import os
 
-# FORCE REBUILD: This ensures the database matches our new User models
-# We delete the local file so SQLAlchemy recreates it perfectly on Render
+# FORCE REBUILD: This deletes the old DB if it exists so SQLAlchemy creates the new tables
 if os.path.exists("insight_engine.db"):
     os.remove("insight_engine.db")
 
@@ -73,10 +72,10 @@ async def analyze(
 
         analysis = processor.analyze_text_input(text)
         
-        # This is where the 500 error happens if owner_id is missing
+        # Mapping the data to the new model with owner_id
         db_insight = models.InsightRecord(
             **analysis, 
-            original_text=text[:500], # Limit text length for DB stability
+            original_text=text[:1000], # Save first 1000 chars for safety
             owner_id=user_id
         )
         db.add(db_insight)
@@ -85,7 +84,7 @@ async def analyze(
         return db_insight
     except Exception as e:
         print(f"CRITICAL ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Processing Error")
 
 @app.get("/history/{user_id}")
 def history(user_id: int, db: Session = Depends(get_db)):
