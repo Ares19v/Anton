@@ -3,13 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from . import models, database, schemas, crud, processor
+import os
 
-# 1. Database Init
+# FORCE REBUILD: This ensures the database matches our new User models
+# We delete the local file so SQLAlchemy recreates it perfectly on Render
+if os.path.exists("insight_engine.db"):
+    os.remove("insight_engine.db")
+
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI()
 
-# 2. Permissive CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. Database Dependency (Must be defined BEFORE routes)
 def get_db():
     db = database.SessionLocal()
     try:
@@ -26,7 +29,6 @@ def get_db():
     finally:
         db.close()
 
-# 4. Routes
 @app.get("/")
 def read_root():
     return {"status": "Online", "message": "Anton Intelligence Engine Active"}
@@ -37,9 +39,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Username taken")
     new_user = models.User(username=user.username, password=user.password)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    db.add(new_user); db.commit(); db.refresh(new_user)
     return new_user
 
 @app.post("/login")
@@ -60,25 +60,34 @@ async def analyze(
     file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
-    text = ""
-    if file:
-        content = await file.read()
-        text = processor.extract_text_from_pdf(content)
-    else:
-        text = original_text
-    
-    if not text:
-        raise HTTPException(status_code=400, detail="No content provided")
+    try:
+        text = ""
+        if file:
+            content = await file.read()
+            text = processor.extract_text_from_pdf(content)
+        else:
+            text = original_text
+        
+        if not text:
+            raise HTTPException(status_code=400, detail="No content provided")
 
-    analysis = processor.analyze_text_input(text)
-    db_insight = models.InsightRecord(**analysis, original_text=text, owner_id=user_id)
-    db.add(db_insight)
-    db.commit()
-    db.refresh(db_insight)
-    return db_insight
+        analysis = processor.analyze_text_input(text)
+        
+        # This is where the 500 error happens if owner_id is missing
+        db_insight = models.InsightRecord(
+            **analysis, 
+            original_text=text[:500], # Limit text length for DB stability
+            owner_id=user_id
+        )
+        db.add(db_insight)
+        db.commit()
+        db.refresh(db_insight)
+        return db_insight
+    except Exception as e:
+        print(f"CRITICAL ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/history/{user_id}")
-@app.get("/history/{user_id}/")
 def history(user_id: int, db: Session = Depends(get_db)):
     return db.query(models.InsightRecord).filter(
         models.InsightRecord.owner_id == user_id
