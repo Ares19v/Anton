@@ -1,21 +1,24 @@
 from textblob import TextBlob
+import PyPDF2
+import io
+
+def extract_text_from_pdf(file_bytes: bytes) -> str:
+    reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+    text = ""
+    for page in reader.pages:
+        extracted = page.extract_text()
+        if extracted:
+            text += extracted + "\n"
+    return text
 
 def analyze_text_input(text: str):
     blob = TextBlob(text)
     polarity = blob.sentiment.polarity
     
-    if polarity > 0.1:
-        label = "Positive"
-    elif polarity < -0.1:
-        label = "Negative"
-    else:
-        label = "Neutral"
-        
+    label = "Positive" if polarity > 0.1 else "Negative" if polarity < -0.1 else "Neutral"
     word_count = len(text.split())
-    # Calculate reading time based on 200 words per minute
     reading_time = round(word_count / 200, 2)
     
-    # Extract unique noun phrases, take top 3
     phrases = list(set(blob.noun_phrases))[:3]
     key_phrases = ", ".join(phrases) if phrases else "None found"
         

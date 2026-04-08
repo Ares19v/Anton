@@ -1,12 +1,12 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
-from . import models, database, schemas, crud
+from typing import List, Optional
+from . import models, database, schemas, crud, processor
 
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="Insight Engine API")
+app = FastAPI(title="Anton API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,14 +25,28 @@ def get_db():
 
 @app.get("/")
 def read_root():
-    return {"status": "Online", "engine": "Insight Engine Logic Active"}
+    return {"status": "Online", "engine": "Anton Logic Active"}
 
-# POST: Send text to the engine for analysis
+# NEW: Accepts multipart/form-data for files
 @app.post("/analyze", response_model=schemas.InsightResponse)
-def analyze_data(insight: schemas.InsightCreate, db: Session = Depends(get_db)):
+async def analyze_data(
+    original_text: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db)
+):
+    text_to_analyze = ""
+    
+    if file and file.filename.endswith('.pdf'):
+        content = await file.read()
+        text_to_analyze = processor.extract_text_from_pdf(content)
+    elif original_text:
+        text_to_analyze = original_text
+    else:
+        raise HTTPException(status_code=400, detail="Provide text or a PDF.")
+
+    insight = schemas.InsightCreate(original_text=text_to_analyze)
     return crud.create_insight(db=db, insight=insight)
 
-# GET: Retrieve all previous insights
 @app.get("/history", response_model=List[schemas.InsightResponse])
 def get_history(db: Session = Depends(get_db)):
     return crud.get_insights(db=db)
