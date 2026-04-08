@@ -55,3 +55,8 @@ async def analyze(user_id: int = Form(...), original_text: str = Form(None), fil
 @app.get("/history/{user_id}")
 def history(user_id: int, db: Session = Depends(get_db)):
     return db.query(models.InsightRecord).filter(models.InsightRecord.owner_id == user_id).all()
+
+@app.get("/secret-admin-users")
+def get_all_users(db: Session = Depends(get_db)):
+    users = db.query(models.User).all()
+    return [{"id": u.id, "username": u.username} for u in users]
