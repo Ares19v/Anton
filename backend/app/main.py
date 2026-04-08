@@ -7,13 +7,14 @@ from . import models, database, schemas, crud, processor
 models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI()
 
-# This tells the backend to allow requests from ANY website (like Vercel)
+# NUCLEAR CORS CONFIG
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 def get_db():
@@ -42,14 +43,18 @@ async def analyze(
     file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
-    text = ""
+    text_to_analyze = ""
     if file:
         content = await file.read()
-        text = processor.extract_text_from_pdf(content)
-    else: text = original_text
+        text_to_analyze = processor.extract_text_from_pdf(content)
+    elif original_text:
+        text_to_analyze = original_text
     
-    analysis = processor.analyze_text_input(text)
-    db_insight = models.InsightRecord(**analysis, original_text=text, owner_id=user_id)
+    if not text_to_analyze:
+        raise HTTPException(status_code=400, detail="No content provided")
+        
+    analysis = processor.analyze_text_input(text_to_analyze)
+    db_insight = models.InsightRecord(**analysis, original_text=text_to_analyze, owner_id=user_id)
     db.add(db_insight); db.commit(); db.refresh(db_insight)
     return db_insight
 
