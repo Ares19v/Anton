@@ -7,7 +7,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
-    password = Column(String) # In a real app, we'd hash this
+    password = Column(String)
     insights = relationship("InsightRecord", back_populates="owner")
 
 class InsightRecord(Base):
@@ -16,6 +16,8 @@ class InsightRecord(Base):
     original_text = Column(Text)
     sentiment_score = Column(Float)
     sentiment_label = Column(String)
+    subjectivity = Column(Float) # NEW
+    readability_grade = Column(String) # NEW
     word_count = Column(Integer)
     reading_time = Column(Float)
     key_phrases = Column(String)

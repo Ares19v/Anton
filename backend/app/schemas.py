@@ -18,6 +18,8 @@ class InsightResponse(InsightBase):
     id: int
     sentiment_score: float
     sentiment_label: str
+    subjectivity: float
+    readability_grade: str
     word_count: int
     reading_time: float
     key_phrases: str

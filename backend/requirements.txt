@@ -18,14 +18,17 @@ pycparser==3.0
 pydantic==2.12.5
 pydantic_core==2.41.5
 PyPDF2==3.0.1
+pyphen==0.17.2
 python-jose==3.5.0
 python-multipart==0.0.24
 regex==2026.4.4
 rsa==4.9.1
+setuptools==82.0.1
 six==1.17.0
 SQLAlchemy==2.0.49
 starlette==1.0.0
 textblob==0.20.0
+textstat==0.7.13
 tqdm==4.67.3
 typing-inspection==0.4.2
 typing_extensions==4.15.0
