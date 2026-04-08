@@ -4,9 +4,12 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from . import models, database, schemas, crud, processor
 
+# 1. Database Init
 models.Base.metadata.create_all(bind=database.engine)
+
 app = FastAPI()
 
+# 2. Permissive CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,31 +18,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# FIXED: Defined at the TOP so Python doesn't crash on startup
+# 3. Database Dependency (Must be defined BEFORE routes)
 def get_db():
     db = database.SessionLocal()
-    try: yield db
-    finally: db.close()
+    try:
+        yield db
+    finally:
+        db.close()
 
+# 4. Routes
 @app.get("/")
 def read_root():
-    return {"status": "Online", "message": "Anton Intelligence Engine is Active"}
+    return {"status": "Online", "message": "Anton Intelligence Engine Active"}
 
 @app.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
-    if db_user: raise HTTPException(status_code=400, detail="Username taken")
+    if db_user:
+        raise HTTPException(status_code=400, detail="Username taken")
     new_user = models.User(username=user.username, password=user.password)
-    db.add(new_user); db.commit(); db.refresh(new_user)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     return new_user
 
 @app.post("/login")
 def login(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.username == user.username, models.User.password == user.password).first()
-    if not db_user: raise HTTPException(status_code=401, detail="Invalid credentials")
+    db_user = db.query(models.User).filter(
+        models.User.username == user.username, 
+        models.User.password == user.password
+    ).first()
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     return db_user
 
-# FIXED: Catches both slash variations to stop CORS redirect drops
 @app.post("/analyze")
 @app.post("/analyze/")
 async def analyze(
@@ -52,16 +64,22 @@ async def analyze(
     if file:
         content = await file.read()
         text = processor.extract_text_from_pdf(content)
-    else: text = original_text
+    else:
+        text = original_text
     
-    if not text: raise HTTPException(status_code=400, detail="No content")
+    if not text:
+        raise HTTPException(status_code=400, detail="No content provided")
 
     analysis = processor.analyze_text_input(text)
     db_insight = models.InsightRecord(**analysis, original_text=text, owner_id=user_id)
-    db.add(db_insight); db.commit(); db.refresh(db_insight)
+    db.add(db_insight)
+    db.commit()
+    db.refresh(db_insight)
     return db_insight
 
 @app.get("/history/{user_id}")
 @app.get("/history/{user_id}/")
 def history(user_id: int, db: Session = Depends(get_db)):
-    return db.query(models.InsightRecord).filter(models.InsightRecord.owner_id == user_id).order_by(models.InsightRecord.created_at.desc()).all()
+    return db.query(models.InsightRecord).filter(
+        models.InsightRecord.owner_id == user_id
+    ).order_by(models.InsightRecord.created_at.desc()).all()
