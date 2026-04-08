@@ -4,10 +4,23 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from . import models, database, schemas, crud, processor
 import os
+import nltk
 
-# FORCE REBUILD: This deletes the old DB if it exists so SQLAlchemy creates the new tables
-if os.path.exists("insight_engine.db"):
-    os.remove("insight_engine.db")
+# THIS IS THE FIX: Download required NLP data for TextBlob
+try:
+    nltk.data.find('corpora/brown')
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('brown')
+    nltk.download('punkt')
+    nltk.download('punkt_tab')
+
+# Database Structure Fix
+if not os.path.exists("db_fixed.txt"):
+    if os.path.exists("insight_engine.db"):
+        os.remove("insight_engine.db")
+    with open("db_fixed.txt", "w") as f:
+        f.write("fixed")
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -59,32 +72,27 @@ async def analyze(
     file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
-    try:
-        text = ""
-        if file:
-            content = await file.read()
-            text = processor.extract_text_from_pdf(content)
-        else:
-            text = original_text
-        
-        if not text:
-            raise HTTPException(status_code=400, detail="No content provided")
+    text_to_process = ""
+    if file:
+        content = await file.read()
+        text_to_process = processor.extract_text_from_pdf(content)
+    else:
+        text_to_process = original_text
+    
+    if not text_to_process:
+        raise HTTPException(status_code=400, detail="No content provided")
 
-        analysis = processor.analyze_text_input(text)
-        
-        # Mapping the data to the new model with owner_id
-        db_insight = models.InsightRecord(
-            **analysis, 
-            original_text=text[:1000], # Save first 1000 chars for safety
-            owner_id=user_id
-        )
-        db.add(db_insight)
-        db.commit()
-        db.refresh(db_insight)
-        return db_insight
-    except Exception as e:
-        print(f"CRITICAL ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Processing Error")
+    analysis = processor.analyze_text_input(text_to_process)
+    
+    db_insight = models.InsightRecord(
+        **analysis, 
+        original_text=text_to_process[:500], 
+        owner_id=user_id
+    )
+    db.add(db_insight)
+    db.commit()
+    db.refresh(db_insight)
+    return db_insight
 
 @app.get("/history/{user_id}")
 def history(user_id: int, db: Session = Depends(get_db)):
