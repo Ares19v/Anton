@@ -1,31 +1,24 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List, Optional
 from . import models, database, schemas, crud, processor
-import os
 import nltk
 
-# THIS IS THE FIX: Download required NLP data for TextBlob
+# 1. Force Download NLP Data
 try:
-    nltk.data.find('corpora/brown')
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('brown')
-    nltk.download('punkt')
-    nltk.download('punkt_tab')
+    nltk.download('brown', quiet=True)
+    nltk.download('punkt', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
+    nltk.download('averaged_perceptron_tagger', quiet=True)
+except:
+    pass
 
-# Database Structure Fix
-if not os.path.exists("db_fixed.txt"):
-    if os.path.exists("insight_engine.db"):
-        os.remove("insight_engine.db")
-    with open("db_fixed.txt", "w") as f:
-        f.write("fixed")
-
+# 2. Setup DB
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI()
 
+# 3. Open ALL CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,66 +29,43 @@ app.add_middleware(
 
 def get_db():
     db = database.SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    try: yield db
+    finally: db.close()
 
-@app.get("/")
+# 4. Root Routes (Allows HEAD/GET/POST to prevent 405 errors)
+@app.api_route("/", methods=["GET", "HEAD"])
 def read_root():
-    return {"status": "Online", "message": "Anton Intelligence Engine Active"}
+    return {"status": "Online"}
 
 @app.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username taken")
+    if db_user: raise HTTPException(status_code=400, detail="Taken")
     new_user = models.User(username=user.username, password=user.password)
     db.add(new_user); db.commit(); db.refresh(new_user)
     return new_user
 
 @app.post("/login")
 def login(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(
-        models.User.username == user.username, 
-        models.User.password == user.password
-    ).first()
-    if not db_user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    return db_user
+    user_db = db.query(models.User).filter(models.User.username == user.username, models.User.password == user.password).first()
+    if not user_db: raise HTTPException(status_code=401)
+    return user_db
 
 @app.post("/analyze")
-@app.post("/analyze/")
-async def analyze(
-    user_id: int = Form(...),
-    original_text: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
-):
-    text_to_process = ""
+async def analyze(user_id: int = Form(...), original_text: str = Form(None), file: UploadFile = File(None), db: Session = Depends(get_db)):
+    text = ""
     if file:
-        content = await file.read()
-        text_to_process = processor.extract_text_from_pdf(content)
+        text = processor.extract_text_from_pdf(await file.read())
     else:
-        text_to_process = original_text
+        text = original_text
     
-    if not text_to_process:
-        raise HTTPException(status_code=400, detail="No content provided")
-
-    analysis = processor.analyze_text_input(text_to_process)
+    if not text: raise HTTPException(status_code=400)
     
-    db_insight = models.InsightRecord(
-        **analysis, 
-        original_text=text_to_process[:500], 
-        owner_id=user_id
-    )
-    db.add(db_insight)
-    db.commit()
-    db.refresh(db_insight)
-    return db_insight
+    res = processor.analyze_text_input(text)
+    record = models.InsightRecord(**res, original_text=text[:500], owner_id=user_id)
+    db.add(record); db.commit(); db.refresh(record)
+    return record
 
 @app.get("/history/{user_id}")
 def history(user_id: int, db: Session = Depends(get_db)):
-    return db.query(models.InsightRecord).filter(
-        models.InsightRecord.owner_id == user_id
-    ).order_by(models.InsightRecord.created_at.desc()).all()
+    return db.query(models.InsightRecord).filter(models.InsightRecord.owner_id == user_id).all()
