@@ -1,21 +1,30 @@
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from . import models, database, schemas, crud, processor
+from fastapi.responses import JSONResponse
 
 models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI()
 
-# NUCLEAR CORS CONFIG
+# Nuclear CORS - Allows absolutely everything
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
+
+# Explicitly handle Preflight OPTIONS requests
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(request: Request, rest_of_path: str):
+    return JSONResponse(content="OK", headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+    })
 
 def get_db():
     db = database.SessionLocal()
@@ -43,18 +52,16 @@ async def analyze(
     file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
-    text_to_analyze = ""
+    text = ""
     if file:
         content = await file.read()
-        text_to_analyze = processor.extract_text_from_pdf(content)
-    elif original_text:
-        text_to_analyze = original_text
+        text = processor.extract_text_from_pdf(content)
+    else: text = original_text
     
-    if not text_to_analyze:
-        raise HTTPException(status_code=400, detail="No content provided")
-        
-    analysis = processor.analyze_text_input(text_to_analyze)
-    db_insight = models.InsightRecord(**analysis, original_text=text_to_analyze, owner_id=user_id)
+    if not text: raise HTTPException(status_code=400, detail="No content")
+
+    analysis = processor.analyze_text_input(text)
+    db_insight = models.InsightRecord(**analysis, original_text=text, owner_id=user_id)
     db.add(db_insight); db.commit(); db.refresh(db_insight)
     return db_insight
 
