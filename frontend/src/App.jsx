@@ -135,7 +135,7 @@ function App() {
               <h2 className="text-lg font-bold mb-6 flex items-center space-x-2 text-slate-700">
                 <BarChart3 className="w-5 h-5" /><span>Sentiment Velocity</span>
               </h2>
-              <div className="h-64 w-full">
+              <div className="h-64 w-full min-h-[256px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={[...history].reverse().slice(-7).map(i => ({time: new Date(i.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), sentiment: i.sentiment_score}))}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
