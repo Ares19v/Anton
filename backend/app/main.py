@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI()
 
-# Nuclear CORS - Allows absolutely everything
+# Most permissive CORS settings possible
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,19 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Explicitly handle Preflight OPTIONS requests
-@app.options("/{rest_of_path:path}")
-async def preflight_handler(request: Request, rest_of_path: str):
-    return JSONResponse(content="OK", headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-    })
-
-def get_db():
-    db = database.SessionLocal()
-    try: yield db
-    finally: db.close()
+# Root route so visiting the URL in a browser shows "Online"
+@app.get("/")
+def read_root():
+    return {"status": "Online", "message": "Anton Intelligence Engine is Active"}
 
 @app.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -68,3 +59,8 @@ async def analyze(
 @app.get("/history/{user_id}")
 def history(user_id: int, db: Session = Depends(get_db)):
     return db.query(models.InsightRecord).filter(models.InsightRecord.owner_id == user_id).order_by(models.InsightRecord.created_at.desc()).all()
+
+def get_db():
+    db = database.SessionLocal()
+    try: yield db
+    finally: db.close()
