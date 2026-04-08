@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { jsPDF } from "jspdf";
-import { BrainCircuit, MessageSquare, History, Send, Clock, Download, BarChart3, FileUp, LogOut, User as UserIcon, ShieldCheck, Users, FileText, Scale, ChevronDown, ChevronUp, Activity, Sparkles } from 'lucide-react';
+import { BrainCircuit, MessageSquare, Download, FileUp, LogOut, User as UserIcon, ShieldCheck, Users, FileText, Scale, ChevronDown, ChevronUp, Activity, Sparkles } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -13,7 +13,7 @@ function App() {
   const [view, setView] = useState('dashboard');
   const [allUsers, setAllUsers] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [files, setFiles] = useState([]); // CHANGED: Now an array for Batch Uploads
+  const [files, setFiles] = useState([]); 
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showTelemetry, setShowTelemetry] = useState(false);
@@ -55,17 +55,14 @@ function App() {
     formData.append('user_id', user.id);
     if (inputText) formData.append('original_text', inputText);
     
-    // NEW: Append multiple files to the payload
     if (files.length > 0) {
-      files.forEach(file => {
-        formData.append('files', file);
-      });
+      files.forEach(file => { formData.append('files', file); });
     }
 
     try {
       await axios.post(`${API_BASE_URL}/analyze`, formData);
       setInputText(''); 
-      setFiles([]); // Clear batch after upload
+      setFiles([]); 
       fetchHistory();
       if (!showTelemetry) setShowTelemetry(true);
     } catch (err) { 
@@ -83,23 +80,20 @@ function App() {
     doc.setTextColor(0, 0, 0); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Executive Summary", 20, 70);
     doc.setFontSize(11); doc.setFont("helvetica", "normal");
     
-    // Core Metrics
     doc.text(`Sentiment Classification: ${item.sentiment_label} (${item.sentiment_score})`, 20, 80);
     doc.text(`Subjectivity Index: ${item.subjectivity > 0.5 ? 'Opinion-Based' : 'Factual/Objective'} (${item.subjectivity})`, 20, 90);
     doc.text(`Reading Complexity: ${item.readability_grade}`, 20, 100);
     
-    // AI Action Summary (If it exists)
     if (item.ai_summary) {
-        doc.setTextColor(79, 70, 229);
-        doc.text("AI ACTION SUMMARY:", 20, 110);
+        doc.setTextColor(79, 70, 229); doc.text("AI ACTION SUMMARY:", 20, 115);
         doc.setTextColor(0, 0, 0);
         const splitAi = doc.splitTextToSize(item.ai_summary, 170);
-        doc.text(splitAi, 20, 115);
+        doc.text(splitAi, 20, 122);
     }
 
-    doc.line(20, 135, 190, 135); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Source Document", 20, 150);
+    doc.line(20, 140, 190, 140); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Source Document", 20, 155);
     doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    const splitText = doc.splitTextToSize(item.original_text, 170); doc.text(splitText, 20, 160);
+    const splitText = doc.splitTextToSize(item.original_text, 170); doc.text(splitText, 20, 165);
     doc.save(`Anton_Report_${item.id}.pdf`);
   };
 
@@ -164,12 +158,11 @@ function App() {
                   <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Feed Anton raw text or attach a batch of PDFs..." className="w-full p-4 h-40 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none" disabled={loading || files.length > 0} />
                   
                   <div className="flex items-center space-x-4">
-                    {/* NEW BATCH INPUT */}
-                    <input type="file" accept=".pdf" multiple multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="hidden" ref={fileInputRef} />
+                    <input type="file" accept=".pdf" multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="hidden" ref={fileInputRef} />
                     
                     <button type="button" onClick={() => fileInputRef.current.click()} className={`flex items-center space-x-2 px-6 py-3.5 rounded-2xl border font-bold transition-all ${files.length > 0 ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'}`}>
                         <FileUp className="w-5 h-5" />
-                        <span>{files.length > 0 ? `${files.length} File(s) Ready` : 'Batch PDFs'}</span>
+                        <span>{files.length > 0 ? `${files.length} Files Selected` : 'Batch PDFs'}</span>
                     </button>
                     
                     <button type="submit" disabled={loading || (!inputText.trim() && files.length === 0)} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-2xl font-black tracking-wide transition-all disabled:opacity-50 shadow-lg shadow-indigo-600/30 active:scale-[0.98]">
@@ -234,13 +227,13 @@ function App() {
                       </div>
                       <p className="text-sm text-slate-600 line-clamp-3 mb-4 leading-relaxed font-medium">"{item.original_text}"</p>
                       
-                      {/* NEW: AI ACTION SUMMARY DISPLAY */}
-                      {item.ai_summary && (
-                        <div className="mb-4 p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl">
-                          <h4 className="flex items-center gap-1 text-[10px] font-black uppercase text-indigo-800 mb-1 tracking-wider"><Sparkles className="w-3 h-3" /> AI Action Summary</h4>
-                          <p className="text-xs text-indigo-900 font-semibold leading-relaxed">{item.ai_summary}</p>
-                        </div>
-                      )}
+                      {/* FORCED VISIBLE AI BOX */}
+                      <div className="mb-4 p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+                        <h4 className="flex items-center gap-1 text-[10px] font-black uppercase text-indigo-800 mb-1 tracking-wider"><Sparkles className="w-3 h-3" /> AI Action Summary</h4>
+                        <p className="text-xs text-indigo-900 font-semibold leading-relaxed">
+                            {item.ai_summary ? item.ai_summary : "AI Data Missing - Check Groq API Key or Backend Logs."}
+                        </p>
+                      </div>
 
                       <div className="flex flex-wrap gap-2">
                           <div className={`px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide border ${item.sentiment_label === 'Positive' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : item.sentiment_label === 'Negative' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{item.sentiment_label}</div>
