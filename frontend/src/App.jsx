@@ -17,6 +17,7 @@ function App() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showTelemetry, setShowTelemetry] = useState(false);
+  const [showAi, setShowAi] = useState(true); // NEW STATE FOR AI SUMMARY TOGGLE
   const fileInputRef = useRef(null);
 
   useEffect(() => { 
@@ -65,6 +66,7 @@ function App() {
       setFiles([]); 
       fetchHistory();
       if (!showTelemetry) setShowTelemetry(true);
+      if (!showAi) setShowAi(true);
     } catch (err) { 
       alert(`Analysis Failed: ${err.response?.data?.detail || err.message}`);
     } finally { setLoading(false); }
@@ -209,6 +211,20 @@ function App() {
                   </div>
                 </section>
               )}
+
+              {/* NEW GLOBAL AI ACTION SUMMARY SECTION */}
+              <button onClick={() => setShowAi(!showAi)} className="w-full flex items-center justify-between p-4 bg-indigo-50/50 hover:bg-indigo-100 border border-indigo-100 rounded-2xl text-indigo-800 font-bold transition-colors">
+                <div className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-indigo-600" /> Latest AI Action Summary</div>
+                {showAi ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
+
+              {showAi && history.length > 0 && (
+                <section className="bg-white p-6 rounded-3xl shadow-sm border border-indigo-100 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-500 ease-out fill-mode-both">
+                  <p className="text-sm text-indigo-900 font-semibold leading-relaxed">
+                      {history[history.length - 1]?.ai_summary || "AI Data Missing - Check Groq API Key or Backend Logs."}
+                  </p>
+                </section>
+              )}
             </div>
 
             <div className="lg:col-span-1">
@@ -226,14 +242,6 @@ function App() {
                         <button onClick={() => downloadProfessionalPDF(item)} className="text-indigo-600 hover:text-white hover:bg-indigo-600 transition-all flex items-center gap-1 text-[10px] font-bold bg-indigo-50 px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0 duration-200"><Download className="w-3 h-3" /> Report</button>
                       </div>
                       <p className="text-sm text-slate-600 line-clamp-3 mb-4 leading-relaxed font-medium">"{item.original_text}"</p>
-                      
-                      {/* FORCED VISIBLE AI BOX */}
-                      <div className="mb-4 p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl">
-                        <h4 className="flex items-center gap-1 text-[10px] font-black uppercase text-indigo-800 mb-1 tracking-wider"><Sparkles className="w-3 h-3" /> AI Action Summary</h4>
-                        <p className="text-xs text-indigo-900 font-semibold leading-relaxed">
-                            {item.ai_summary ? item.ai_summary : "AI Data Missing - Check Groq API Key or Backend Logs."}
-                        </p>
-                      </div>
 
                       <div className="flex flex-wrap gap-2">
                           <div className={`px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide border ${item.sentiment_label === 'Positive' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : item.sentiment_label === 'Negative' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{item.sentiment_label}</div>
@@ -278,6 +286,3 @@ function App() {
 }
 
 export default App;
-// Force Vercel Build Update
-// Force Vercel Build Update
-// Final clean ownership push
