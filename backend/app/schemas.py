@@ -23,7 +23,7 @@ class InsightResponse(InsightBase):
     word_count: int
     reading_time: float
     key_phrases: str
-    ai_summary: Optional[str] = None
+    ai_summary: Optional[str] = None # <-- THE GATEWAY FOR THE FRONTEND
     created_at: datetime
     class Config: from_attributes = True
 

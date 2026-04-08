@@ -16,12 +16,12 @@ class InsightRecord(Base):
     original_text = Column(Text)
     sentiment_score = Column(Float)
     sentiment_label = Column(String)
-    subjectivity = Column(Float) # NEW
-    readability_grade = Column(String) # NEW
+    subjectivity = Column(Float)
+    readability_grade = Column(String)
     word_count = Column(Integer)
     reading_time = Column(Float)
     key_phrases = Column(String)
-    ai_summary = Column(Text) # NEW AI FIELD
+    ai_summary = Column(Text, nullable=True) # <-- THE DATABASE COLUMN
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="insights")
