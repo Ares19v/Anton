@@ -1,24 +1,11 @@
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from . import models, database, schemas, crud, processor
-import nltk
+from . import models, database, schemas, processor
 
-# 1. Force Download NLP Data
-try:
-    nltk.download('brown', quiet=True)
-    nltk.download('punkt', quiet=True)
-    nltk.download('punkt_tab', quiet=True)
-    nltk.download('averaged_perceptron_tagger', quiet=True)
-except:
-    pass
-
-# 2. Setup DB
 models.Base.metadata.create_all(bind=database.engine)
-
 app = FastAPI()
 
-# 3. Open ALL CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,8 +19,7 @@ def get_db():
     try: yield db
     finally: db.close()
 
-# 4. Root Routes (Allows HEAD/GET/POST to prevent 405 errors)
-@app.api_route("/", methods=["GET", "HEAD"])
+@app.get("/")
 def read_root():
     return {"status": "Online"}
 
@@ -47,9 +33,9 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/login")
 def login(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    user_db = db.query(models.User).filter(models.User.username == user.username, models.User.password == user.password).first()
-    if not user_db: raise HTTPException(status_code=401)
-    return user_db
+    u = db.query(models.User).filter(models.User.username == user.username, models.User.password == user.password).first()
+    if not u: raise HTTPException(status_code=401)
+    return u
 
 @app.post("/analyze")
 async def analyze(user_id: int = Form(...), original_text: str = Form(None), file: UploadFile = File(None), db: Session = Depends(get_db)):
