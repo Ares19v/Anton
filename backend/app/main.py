@@ -1,11 +1,25 @@
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from . import models, database, schemas, processor
+from typing import List, Optional
+from . import models, database, schemas, crud, processor
+from fastapi.responses import JSONResponse
+import nltk
+
+# Force NLP data
+try:
+    nltk.download('brown', quiet=True)
+    nltk.download('punkt', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
+    nltk.download('averaged_perceptron_tagger', quiet=True)
+except:
+    pass
 
 models.Base.metadata.create_all(bind=database.engine)
+
 app = FastAPI()
 
+# NUCLEAR CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,6 +28,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# FIXED: Explicit handler for the "Preflight" OPTIONS request
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(request: Request, rest_of_path: str):
+    return JSONResponse(content="OK", headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+    })
+
 def get_db():
     db = database.SessionLocal()
     try: yield db
@@ -21,7 +44,7 @@ def get_db():
 
 @app.get("/")
 def read_root():
-    return {"status": "Online"}
+    return {"status": "Online", "message": "Anton Pro Active"}
 
 @app.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -42,8 +65,7 @@ async def analyze(user_id: int = Form(...), original_text: str = Form(None), fil
     text = ""
     if file:
         text = processor.extract_text_from_pdf(await file.read())
-    else:
-        text = original_text
+    else: text = original_text
     
     if not text: raise HTTPException(status_code=400)
     
@@ -53,14 +75,9 @@ async def analyze(user_id: int = Form(...), original_text: str = Form(None), fil
     return record
 
 @app.get("/history/{user_id}")
-@app.get("/admin/users")
-def get_all_users(db: Session = Depends(get_db)):
-    return db.query(models.User).all()
-
 def history(user_id: int, db: Session = Depends(get_db)):
     return db.query(models.InsightRecord).filter(models.InsightRecord.owner_id == user_id).all()
 
-@app.get("/secret-admin-users")
+@app.get("/admin/users")
 def get_all_users(db: Session = Depends(get_db)):
-    users = db.query(models.User).all()
-    return [{"id": u.id, "username": u.username} for u in users]
+    return db.query(models.User).all()
