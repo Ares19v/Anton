@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { jsPDF } from "jspdf";
-import { BrainCircuit, MessageSquare, History, Send, Clock, Download, BarChart3, FileUp, LogOut, User as UserIcon, ShieldCheck, Users, FileText, Scale, ChevronDown, ChevronUp, Activity } from 'lucide-react';
+import { BrainCircuit, MessageSquare, History, Send, Clock, Download, BarChart3, FileUp, LogOut, User as UserIcon, ShieldCheck, Users, FileText, Scale, ChevronDown, ChevronUp, Activity, Sparkles } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -13,10 +13,10 @@ function App() {
   const [view, setView] = useState('dashboard');
   const [allUsers, setAllUsers] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]); // CHANGED: Now an array for Batch Uploads
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showTelemetry, setShowTelemetry] = useState(false); // NEW: Controls the graph visibility
+  const [showTelemetry, setShowTelemetry] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => { 
@@ -54,17 +54,22 @@ function App() {
     const formData = new FormData();
     formData.append('user_id', user.id);
     if (inputText) formData.append('original_text', inputText);
-    if (file) formData.append('file', file);
+    
+    // NEW: Append multiple files to the payload
+    if (files.length > 0) {
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+    }
 
     try {
       await axios.post(`${API_BASE_URL}/analyze`, formData);
-      setInputText(''); setFile(null); fetchHistory();
-      // Auto-open telemetry on first analysis if hidden
+      setInputText(''); 
+      setFiles([]); // Clear batch after upload
+      fetchHistory();
       if (!showTelemetry) setShowTelemetry(true);
     } catch (err) { 
-      // NEW: Visually alert the user if the backend crashes
       alert(`Analysis Failed: ${err.response?.data?.detail || err.message}`);
-      console.error(err); 
     } finally { setLoading(false); }
   };
 
@@ -77,17 +82,27 @@ function App() {
     doc.setDrawColor(226, 232, 240); doc.line(20, 55, 190, 55);
     doc.setTextColor(0, 0, 0); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Executive Summary", 20, 70);
     doc.setFontSize(11); doc.setFont("helvetica", "normal");
+    
+    // Core Metrics
     doc.text(`Sentiment Classification: ${item.sentiment_label} (${item.sentiment_score})`, 20, 80);
     doc.text(`Subjectivity Index: ${item.subjectivity > 0.5 ? 'Opinion-Based' : 'Factual/Objective'} (${item.subjectivity})`, 20, 90);
     doc.text(`Reading Complexity: ${item.readability_grade}`, 20, 100);
-    doc.text(`Key Entities: ${item.key_phrases}`, 20, 110);
-    doc.line(20, 120, 190, 120); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Source Document", 20, 135);
+    
+    // AI Action Summary (If it exists)
+    if (item.ai_summary) {
+        doc.setTextColor(79, 70, 229);
+        doc.text("AI ACTION SUMMARY:", 20, 110);
+        doc.setTextColor(0, 0, 0);
+        const splitAi = doc.splitTextToSize(item.ai_summary, 170);
+        doc.text(splitAi, 20, 115);
+    }
+
+    doc.line(20, 135, 190, 135); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Source Document", 20, 150);
     doc.setFontSize(10); doc.setFont("helvetica", "normal");
-    const splitText = doc.splitTextToSize(item.original_text, 170); doc.text(splitText, 20, 145);
+    const splitText = doc.splitTextToSize(item.original_text, 170); doc.text(splitText, 20, 160);
     doc.save(`Anton_Report_${item.id}.pdf`);
   };
 
-  // Prepare chart data
   const chartData = [...history].reverse().slice(-10).map(i => ({
     time: new Date(i.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 
     sentiment: i.sentiment_score,
@@ -100,7 +115,7 @@ function App() {
         <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center">
             <div className="inline-block bg-indigo-600 p-3 rounded-2xl mb-4"><BrainCircuit className="w-10 h-10 text-white" /></div>
             <h1 className="text-3xl font-black text-slate-900">ANTON</h1>
-            <p className="text-slate-500 text-sm mb-8">Intelligence Engine v5.0</p>
+            <p className="text-slate-500 text-sm mb-8">Intelligence Engine v6.0 PRO</p>
           <form onSubmit={handleAuth} className="space-y-4 text-left">
             <input type="text" placeholder="Username" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" onChange={e => setAuthData({...authData, username: e.target.value})} />
             <input type="password" placeholder="Password" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" onChange={e => setAuthData({...authData, password: e.target.value})} />
@@ -119,7 +134,6 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800 selection:bg-indigo-100">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* HEADER */}
         <header className="flex flex-col md:flex-row items-center justify-between pb-6 border-b border-slate-200 gap-4">
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setView('dashboard')}>
             <div className="bg-indigo-600 p-2 rounded-xl shadow-md"><BrainCircuit className="w-8 h-8 text-white" /></div>
@@ -142,35 +156,36 @@ function App() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               
-              {/* INPUT SECTION */}
               <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                 <h2 className="text-lg font-bold mb-4 flex items-center space-x-2 text-slate-800">
                   <MessageSquare className="w-5 h-5 text-indigo-500" /><span>Data Ingestion</span>
                 </h2>
                 <form onSubmit={handleAnalyze} className="space-y-4">
-                  <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Feed Anton raw text or attach a PDF..." className="w-full p-4 h-40 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none" disabled={loading || file !== null} />
+                  <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Feed Anton raw text or attach a batch of PDFs..." className="w-full p-4 h-40 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none" disabled={loading || files.length > 0} />
+                  
                   <div className="flex items-center space-x-4">
-                    <input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files[0])} className="hidden" ref={fileInputRef} />
-                    <button type="button" onClick={() => fileInputRef.current.click()} className={`flex items-center space-x-2 px-6 py-3.5 rounded-2xl border font-bold transition-all ${file ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'}`}><FileUp className="w-5 h-5" /><span>{file ? file.name : 'Upload PDF'}</span></button>
-                    <button type="submit" disabled={loading || (!inputText.trim() && !file)} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-2xl font-black tracking-wide transition-all disabled:opacity-50 shadow-lg shadow-indigo-600/30 active:scale-[0.98]">{loading ? 'Processing Data...' : 'Execute Deep Analysis'}</button>
+                    {/* NEW BATCH INPUT */}
+                    <input type="file" accept=".pdf" multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="hidden" ref={fileInputRef} />
+                    
+                    <button type="button" onClick={() => fileInputRef.current.click()} className={`flex items-center space-x-2 px-6 py-3.5 rounded-2xl border font-bold transition-all ${files.length > 0 ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'}`}>
+                        <FileUp className="w-5 h-5" />
+                        <span>{files.length > 0 ? `${files.length} File(s) Ready` : 'Batch PDFs'}</span>
+                    </button>
+                    
+                    <button type="submit" disabled={loading || (!inputText.trim() && files.length === 0)} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-2xl font-black tracking-wide transition-all disabled:opacity-50 shadow-lg shadow-indigo-600/30 active:scale-[0.98]">
+                        {loading ? 'Processing Batch / Generating AI Summaries...' : 'Execute Deep Analysis'}
+                    </button>
                   </div>
                 </form>
               </section>
 
-              {/* TELEMETRY TOGGLE BUTTON */}
-              <button 
-                onClick={() => setShowTelemetry(!showTelemetry)} 
-                className="w-full flex items-center justify-between p-4 bg-slate-100/50 hover:bg-slate-100 border border-slate-200 rounded-2xl text-slate-600 font-bold transition-colors"
-              >
+              <button onClick={() => setShowTelemetry(!showTelemetry)} className="w-full flex items-center justify-between p-4 bg-slate-100/50 hover:bg-slate-100 border border-slate-200 rounded-2xl text-slate-600 font-bold transition-colors">
                 <div className="flex items-center gap-2"><Activity className="w-5 h-5 text-indigo-500" /> System Telemetry & Charts</div>
                 {showTelemetry ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
               </button>
 
-              {/* ANIMATED TELEMETRY SECTION */}
               {showTelemetry && history.length > 0 && (
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-500 ease-out fill-mode-both">
-                  
-                  {/* Graph 1: Sentiment */}
                   <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                     <h3 className="text-sm font-bold text-slate-500 mb-6 uppercase tracking-wider">Sentiment Velocity</h3>
                     <div className="h-48 w-full">
@@ -185,8 +200,6 @@ function App() {
                       </ResponsiveContainer>
                     </div>
                   </div>
-
-                  {/* Graph 2: Subjectivity Spread */}
                   <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                     <h3 className="text-sm font-bold text-slate-500 mb-6 uppercase tracking-wider">Fact vs Opinion Index</h3>
                     <div className="h-48 w-full">
@@ -203,16 +216,8 @@ function App() {
                   </div>
                 </section>
               )}
-
-              {showTelemetry && history.length === 0 && (
-                 <div className="text-center p-8 bg-slate-100 rounded-2xl border border-slate-200 border-dashed text-slate-400 font-bold animate-in fade-in duration-500">
-                    Execute an analysis to generate telemetry data.
-                 </div>
-              )}
-
             </div>
 
-            {/* FEED SECTION */}
             <div className="lg:col-span-1">
               <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 h-full max-h-[850px] overflow-y-auto custom-scrollbar">
                 <h2 className="text-lg font-black mb-6 flex items-center justify-between text-slate-800 sticky top-0 bg-white pb-4 border-b border-slate-100 z-10">
@@ -229,6 +234,14 @@ function App() {
                       </div>
                       <p className="text-sm text-slate-600 line-clamp-3 mb-4 leading-relaxed font-medium">"{item.original_text}"</p>
                       
+                      {/* NEW: AI ACTION SUMMARY DISPLAY */}
+                      {item.ai_summary && (
+                        <div className="mb-4 p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+                          <h4 className="flex items-center gap-1 text-[10px] font-black uppercase text-indigo-800 mb-1 tracking-wider"><Sparkles className="w-3 h-3" /> AI Action Summary</h4>
+                          <p className="text-xs text-indigo-900 font-semibold leading-relaxed">{item.ai_summary}</p>
+                        </div>
+                      )}
+
                       <div className="flex flex-wrap gap-2">
                           <div className={`px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide border ${item.sentiment_label === 'Positive' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : item.sentiment_label === 'Negative' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{item.sentiment_label}</div>
                           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md text-[10px] font-bold"><FileText className="w-3 h-3" /> {item.readability_grade}</div>
@@ -241,7 +254,6 @@ function App() {
             </div>
           </div>
         ) : (
-          /* ADMIN VIEW */
           <section className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-slate-900 p-8 text-white flex items-center justify-between">
                 <div><h2 className="text-2xl font-black flex items-center gap-3"><Users className="w-8 h-8 text-indigo-400" /> System Registry</h2></div>
