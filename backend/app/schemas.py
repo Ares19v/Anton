@@ -1,21 +1,30 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+
+class UserBase(BaseModel):
+    username: str
+
+class UserCreate(UserBase):
+    password: str
 
 class InsightBase(BaseModel):
     original_text: str
 
 class InsightCreate(InsightBase):
-    pass
+    owner_id: int
 
 class InsightResponse(InsightBase):
     id: int
-    sentiment_score: Optional[float] = None
-    sentiment_label: Optional[str] = None
-    word_count: Optional[int] = None
-    reading_time: Optional[float] = None
-    key_phrases: Optional[str] = None
+    sentiment_score: float
+    sentiment_label: str
+    word_count: int
+    reading_time: float
+    key_phrases: str
     created_at: datetime
+    class Config: from_attributes = True
 
-    class Config:
-        from_attributes = True
+class UserResponse(UserBase):
+    id: int
+    insights: List[InsightResponse] = []
+    class Config: from_attributes = True
