@@ -3,12 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from . import models, database, schemas, crud, processor
-from fastapi.responses import JSONResponse
 
 models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI()
 
-# Most permissive CORS settings possible
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,7 +15,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Root route so visiting the URL in a browser shows "Online"
+# FIXED: Defined at the TOP so Python doesn't crash on startup
+def get_db():
+    db = database.SessionLocal()
+    try: yield db
+    finally: db.close()
+
 @app.get("/")
 def read_root():
     return {"status": "Online", "message": "Anton Intelligence Engine is Active"}
@@ -36,7 +39,9 @@ def login(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if not db_user: raise HTTPException(status_code=401, detail="Invalid credentials")
     return db_user
 
+# FIXED: Catches both slash variations to stop CORS redirect drops
 @app.post("/analyze")
+@app.post("/analyze/")
 async def analyze(
     user_id: int = Form(...),
     original_text: Optional[str] = Form(None),
@@ -57,10 +62,6 @@ async def analyze(
     return db_insight
 
 @app.get("/history/{user_id}")
+@app.get("/history/{user_id}/")
 def history(user_id: int, db: Session = Depends(get_db)):
     return db.query(models.InsightRecord).filter(models.InsightRecord.owner_id == user_id).order_by(models.InsightRecord.created_at.desc()).all()
-
-def get_db():
-    db = database.SessionLocal()
-    try: yield db
-    finally: db.close()
