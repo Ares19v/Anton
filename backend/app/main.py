@@ -53,6 +53,10 @@ async def analyze(user_id: int = Form(...), original_text: str = Form(None), fil
     return record
 
 @app.get("/history/{user_id}")
+@app.get("/admin/users")
+def get_all_users(db: Session = Depends(get_db)):
+    return db.query(models.User).all()
+
 def history(user_id: int, db: Session = Depends(get_db)):
     return db.query(models.InsightRecord).filter(models.InsightRecord.owner_id == user_id).all()
 
