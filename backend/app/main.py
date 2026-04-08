@@ -41,33 +41,37 @@ def login(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if not u: raise HTTPException(status_code=401)
     return u
 
-# NEW: BATCH ANALYZE (Handles multiple files or text)
 @app.post("/analyze")
 async def analyze(
     user_id: int = Form(...),
     original_text: Optional[str] = Form(None),
-    files: List[UploadFile] = File(None), # Changed to List
+    files: List[UploadFile] = File(None), # Support multiple files
     db: Session = Depends(get_db)
 ):
-    results = []
+    results_count = 0
     
-    # Handle Multiple Files
-    if files:
+    # Process Multiple Files
+    if files and len(files) > 0:
         for file in files:
             content = await file.read()
             text = processor.extract_text_from_pdf(content)
             analysis = processor.analyze_text_input(text)
-            record = models.InsightRecord(**analysis, original_text=f"FILE: {file.filename}", owner_id=user_id)
-            db.add(record); results.append(record)
+            record = models.InsightRecord(**analysis, original_text=f"PDF: {file.filename}", owner_id=user_id)
+            db.add(record)
+            results_count += 1
     
-    # Handle Text Input
+    # Process Text Input
     elif original_text:
         analysis = processor.analyze_text_input(original_text)
         record = models.InsightRecord(**analysis, original_text=original_text[:500], owner_id=user_id)
-        db.add(record); results.append(record)
+        db.add(record)
+        results_count += 1
+
+    if results_count == 0:
+        raise HTTPException(status_code=400, detail="No input provided")
 
     db.commit()
-    return {"status": "Batch Complete", "processed": len(results)}
+    return {"status": "Complete", "count": results_count}
 
 @app.get("/history/{user_id}")
 def history(user_id: int, db: Session = Depends(get_db)):

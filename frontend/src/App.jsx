@@ -165,7 +165,7 @@ function App() {
                   
                   <div className="flex items-center space-x-4">
                     {/* NEW BATCH INPUT */}
-                    <input type="file" accept=".pdf" multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="hidden" ref={fileInputRef} />
+                    <input type="file" accept=".pdf" multiple multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="hidden" ref={fileInputRef} />
                     
                     <button type="button" onClick={() => fileInputRef.current.click()} className={`flex items-center space-x-2 px-6 py-3.5 rounded-2xl border font-bold transition-all ${files.length > 0 ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'}`}>
                         <FileUp className="w-5 h-5" />
