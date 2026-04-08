@@ -21,6 +21,7 @@ class InsightRecord(Base):
     word_count = Column(Integer)
     reading_time = Column(Float)
     key_phrases = Column(String)
+    ai_summary = Column(Text) # NEW AI FIELD
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="insights")
