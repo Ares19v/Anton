@@ -1,14 +1,45 @@
 # Node
 node_modules/
 dist/
+.cache/
+.parcel-cache/
+
+# Environment variables — NEVER commit these
 .env
+.env.local
+.env.production
+backend/.env
+frontend/.env
 
 # Python
 venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
 .pytest_cache/
-insight_engine.db
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# Misc
+# SQLite databases — generated at runtime, not source files
+*.db
+*.sqlite
+*.sqlite3
+
+# Debug / temp files
+db_fixed.txt
+*.log
+
+# IDE / OS
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+.dockerignore

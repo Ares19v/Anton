@@ -1,21 +1,64 @@
-from pydantic import BaseModel
+"""schemas.py — Pydantic request/response models for ANTON."""
+
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
-class UserBase(BaseModel):
+from pydantic import BaseModel, field_validator
+
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+
+class UserCreate(BaseModel):
     username: str
-
-class UserCreate(UserBase):
     password: str
 
-class InsightBase(BaseModel):
-    original_text: str
+    @field_validator("username")
+    @classmethod
+    def username_must_be_valid(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("Username must be at least 3 characters.")
+        if len(v) > 30:
+            raise ValueError("Username must be at most 30 characters.")
+        return v
 
-class InsightCreate(InsightBase):
-    owner_id: int
+    @field_validator("password")
+    @classmethod
+    def password_must_be_strong(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters.")
+        return v
 
-class InsightResponse(InsightBase):
+
+class TokenResponse(BaseModel):
+    """Returned by POST /login."""
+    access_token: str
+    token_type: str
+    user_id: int
+    username: str
+
+
+# ---------------------------------------------------------------------------
+# Users
+# ---------------------------------------------------------------------------
+
+class UserResponse(BaseModel):
     id: int
+    username: str
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Insights
+# ---------------------------------------------------------------------------
+
+class InsightResponse(BaseModel):
+    id: int
+    original_text: str
     sentiment_score: float
     sentiment_label: str
     subjectivity: float
@@ -23,11 +66,8 @@ class InsightResponse(InsightBase):
     word_count: int
     reading_time: float
     key_phrases: str
-    ai_summary: Optional[str] = None # <-- THE GATEWAY FOR THE FRONTEND
+    ai_summary: Optional[str] = None
     created_at: datetime
-    class Config: from_attributes = True
 
-class UserResponse(UserBase):
-    id: int
-    insights: List[InsightResponse] = []
-    class Config: from_attributes = True
+    class Config:
+        from_attributes = True

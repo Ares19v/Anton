@@ -1,10 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { jsPDF } from "jspdf";
-import { BrainCircuit, MessageSquare, Download, FileUp, LogOut, User as UserIcon, ShieldCheck, Users, FileText, Scale, ChevronDown, ChevronUp, Activity, Sparkles } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  BrainCircuit, MessageSquare, Download, FileUp, LogOut,
+  User as UserIcon, ShieldCheck, Users, FileText, Scale,
+  ChevronDown, ChevronUp, Activity, Sparkles, Table2
+} from 'lucide-react';
+import {
+  LineChart, Line, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// ---------------------------------------------------------------------------
+// Axios interceptor — attaches Bearer token to every request automatically.
+// If the server returns 401 the handler below clears the session.
+// ---------------------------------------------------------------------------
+const setupAxiosInterceptors = (onUnauthorized) => {
+  axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        onUnauthorized();
+      }
+      return Promise.reject(error);
+    }
+  );
+};
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('anton_user')) || null);
@@ -13,18 +36,37 @@ function App() {
   const [view, setView] = useState('dashboard');
   const [allUsers, setAllUsers] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [files, setFiles] = useState([]); 
+  const [files, setFiles] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showTelemetry, setShowTelemetry] = useState(false);
-  const [showAi, setShowAi] = useState(true); // NEW STATE FOR AI SUMMARY TOGGLE
+  const [showAi, setShowAi] = useState(true);
   const fileInputRef = useRef(null);
 
-  useEffect(() => { 
+  // ── Set axios auth header whenever the user object changes ────────────────
+  useEffect(() => {
+    if (user?.access_token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${user.access_token}`;
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  }, [user]);
+
+  // ── Register the 401 interceptor once on mount ────────────────────────────
+  useEffect(() => {
+    setupAxiosInterceptors(() => {
+      // Token expired or invalid — clear the session silently
+      setUser(null);
+      localStorage.removeItem('anton_user');
+    });
+  }, []);
+
+  useEffect(() => {
     if (user) fetchHistory();
     if (view === 'admin') fetchAllUsers();
   }, [user, view]);
 
+  // ── API helpers ────────────────────────────────────────────────────────────
   const fetchHistory = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/history/${user.id}`);
@@ -34,44 +76,96 @@ function App() {
 
   const fetchAllUsers = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/admin/users`);
+      // Admin key is hardcoded to the dev default; real deployments should
+      // prompt for it or store it in an env var.
+      const res = await axios.get(`${API_BASE_URL}/admin/users`, {
+        headers: { 'X-Admin-Key': import.meta.env.VITE_ADMIN_KEY || 'anton-admin-dev-key' }
+      });
       setAllUsers(res.data);
     } catch (err) { console.error(err); }
   };
 
+  // ── Auth ──────────────────────────────────────────────────────────────────
   const handleAuth = async (e) => {
     e.preventDefault();
     try {
-      const endpoint = authMode === 'login' ? '/login' : '/register';
-      const res = await axios.post(`${API_BASE_URL}${endpoint}`, authData);
-      setUser(res.data);
-      localStorage.setItem('anton_user', JSON.stringify(res.data));
-    } catch (err) { alert(err.response?.data?.detail || "Auth failed"); }
+      if (authMode === 'register') {
+        // 1. Register the account
+        await axios.post(`${API_BASE_URL}/register`, authData);
+        // 2. Auto-login to receive a JWT token
+        const loginRes = await axios.post(`${API_BASE_URL}/login`, authData);
+        const userData = {
+          id: loginRes.data.user_id,
+          username: loginRes.data.username,
+          access_token: loginRes.data.access_token,
+        };
+        setUser(userData);
+        localStorage.setItem('anton_user', JSON.stringify(userData));
+      } else {
+        const res = await axios.post(`${API_BASE_URL}/login`, authData);
+        const userData = {
+          id: res.data.user_id,
+          username: res.data.username,
+          access_token: res.data.access_token,
+        };
+        setUser(userData);
+        localStorage.setItem('anton_user', JSON.stringify(userData));
+      }
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Authentication failed.');
+    }
   };
 
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('anton_user');
+  };
+
+  // ── Analysis ──────────────────────────────────────────────────────────────
   const handleAnalyze = async (e) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData();
-    formData.append('user_id', user.id);
+    // user_id is now derived from the JWT on the backend — no need to send it
     if (inputText) formData.append('original_text', inputText);
-    
     if (files.length > 0) {
-      files.forEach(file => { formData.append('files', file); });
+      files.forEach((file) => formData.append('files', file));
     }
 
     try {
       await axios.post(`${API_BASE_URL}/analyze`, formData);
-      setInputText(''); 
-      setFiles([]); 
+      setInputText('');
+      setFiles([]);
       fetchHistory();
       if (!showTelemetry) setShowTelemetry(true);
       if (!showAi) setShowAi(true);
-    } catch (err) { 
-      alert(`Analysis Failed: ${err.response?.data?.detail || err.message}`);
-    } finally { setLoading(false); }
+    } catch (err) {
+      alert(`Analysis failed: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // ── CSV Export ────────────────────────────────────────────────────────────
+  const downloadCSV = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/history/${user.id}/export`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `anton_history_${user.id}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('CSV export failed.');
+    }
+  };
+
+  // ── PDF Report ────────────────────────────────────────────────────────────
   const downloadProfessionalPDF = (item) => {
     const doc = new jsPDF();
     doc.setFillColor(79, 70, 229); doc.rect(0, 0, 210, 40, 'F');
@@ -81,45 +175,59 @@ function App() {
     doc.setDrawColor(226, 232, 240); doc.line(20, 55, 190, 55);
     doc.setTextColor(0, 0, 0); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Executive Summary", 20, 70);
     doc.setFontSize(11); doc.setFont("helvetica", "normal");
-    
     doc.text(`Sentiment Classification: ${item.sentiment_label} (${item.sentiment_score})`, 20, 80);
     doc.text(`Subjectivity Index: ${item.subjectivity > 0.5 ? 'Opinion-Based' : 'Factual/Objective'} (${item.subjectivity})`, 20, 90);
     doc.text(`Reading Complexity: ${item.readability_grade}`, 20, 100);
-    
     if (item.ai_summary) {
-        doc.setTextColor(79, 70, 229); doc.text("AI ACTION SUMMARY:", 20, 115);
-        doc.setTextColor(0, 0, 0);
-        const splitAi = doc.splitTextToSize(item.ai_summary, 170);
-        doc.text(splitAi, 20, 122);
+      doc.setTextColor(79, 70, 229); doc.text("AI ACTION SUMMARY:", 20, 115);
+      doc.setTextColor(0, 0, 0);
+      const splitAi = doc.splitTextToSize(item.ai_summary, 170);
+      doc.text(splitAi, 20, 122);
     }
-
     doc.line(20, 140, 190, 140); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Source Document", 20, 155);
     doc.setFontSize(10); doc.setFont("helvetica", "normal");
     const splitText = doc.splitTextToSize(item.original_text, 170); doc.text(splitText, 20, 165);
     doc.save(`Anton_Report_${item.id}.pdf`);
   };
 
-  const chartData = [...history].reverse().slice(-10).map(i => ({
-    time: new Date(i.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 
+  // ── Chart data ────────────────────────────────────────────────────────────
+  const chartData = [...history].reverse().slice(-10).map((i) => ({
+    time: new Date(i.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     sentiment: i.sentiment_score,
-    subjectivity: i.subjectivity
+    subjectivity: i.subjectivity,
   }));
 
+  // ── Auth screen ───────────────────────────────────────────────────────────
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 font-sans p-4">
         <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center">
-            <div className="inline-block bg-indigo-600 p-3 rounded-2xl mb-4"><BrainCircuit className="w-10 h-10 text-white" /></div>
-            <h1 className="text-3xl font-black text-slate-900">ANTON</h1>
-            <p className="text-slate-500 text-sm mb-8">Intelligence Engine v6.0 PRO</p>
+          <div className="inline-block bg-indigo-600 p-3 rounded-2xl mb-4">
+            <BrainCircuit className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-3xl font-black text-slate-900">ANTON</h1>
+          <p className="text-slate-500 text-sm mb-8">Intelligence Engine v6.0 PRO</p>
           <form onSubmit={handleAuth} className="space-y-4 text-left">
-            <input type="text" placeholder="Username" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" onChange={e => setAuthData({...authData, username: e.target.value})} />
-            <input type="password" placeholder="Password" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" onChange={e => setAuthData({...authData, password: e.target.value})} />
+            <input
+              type="text"
+              placeholder="Username"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => setAuthData({ ...authData, username: e.target.value })}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
+            />
             <button className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition-all uppercase tracking-widest shadow-lg shadow-indigo-200">
               {authMode === 'login' ? 'Enter System' : 'Initialize Profile'}
             </button>
           </form>
-          <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} className="mt-6 text-slate-400 font-bold uppercase text-xs hover:text-indigo-600 transition-colors">
+          <button
+            onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+            className="mt-6 text-slate-400 font-bold uppercase text-xs hover:text-indigo-600 transition-colors"
+          >
             {authMode === 'login' ? 'Create New Identity' : 'Existing User Login'}
           </button>
         </div>
@@ -127,55 +235,101 @@ function App() {
     );
   }
 
+  // ── Main dashboard ────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-8 font-sans text-slate-800 selection:bg-indigo-100">
       <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
         <header className="flex flex-col md:flex-row items-center justify-between pb-6 border-b border-slate-200 gap-4">
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setView('dashboard')}>
-            <div className="bg-indigo-600 p-2 rounded-xl shadow-md"><BrainCircuit className="w-8 h-8 text-white" /></div>
+            <div className="bg-indigo-600 p-2 rounded-xl shadow-md">
+              <BrainCircuit className="w-8 h-8 text-white" />
+            </div>
             <h1 className="text-4xl font-black tracking-tighter text-slate-900">ANTON</h1>
           </div>
           <nav className="flex items-center space-x-2 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200">
-            <button onClick={() => setView('dashboard')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'dashboard' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}>Dashboard</button>
-            <button onClick={() => setView('admin')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${view === 'admin' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}><ShieldCheck className="w-4 h-4" /> Admin</button>
+            <button
+              onClick={() => setView('dashboard')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'dashboard' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={() => setView('admin')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${view === 'admin' ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+            >
+              <ShieldCheck className="w-4 h-4" /> Admin
+            </button>
           </nav>
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-2 px-4 py-2 bg-white border border-slate-200 rounded-full shadow-sm">
-                <UserIcon className="w-4 h-4 text-indigo-600" />
-                <span className="text-sm font-bold text-slate-700">{user.username}</span>
+              <UserIcon className="w-4 h-4 text-indigo-600" />
+              <span className="text-sm font-bold text-slate-700">{user.username}</span>
             </div>
-            <button onClick={() => {setUser(null); localStorage.removeItem('anton_user');}} className="p-2.5 bg-white border border-slate-200 rounded-full text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all shadow-sm"><LogOut className="w-4 h-4" /></button>
+            <button
+              onClick={handleLogout}
+              className="p-2.5 bg-white border border-slate-200 rounded-full text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all shadow-sm"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </header>
 
         {view === 'dashboard' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left column */}
             <div className="lg:col-span-2 space-y-8">
-              
+
+              {/* Data ingestion */}
               <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                 <h2 className="text-lg font-bold mb-4 flex items-center space-x-2 text-slate-800">
                   <MessageSquare className="w-5 h-5 text-indigo-500" /><span>Data Ingestion</span>
                 </h2>
                 <form onSubmit={handleAnalyze} className="space-y-4">
-                  <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Feed Anton raw text or attach a batch of PDFs..." className="w-full p-4 h-40 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none" disabled={loading || files.length > 0} />
-                  
+                  <textarea
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="Feed Anton raw text or attach a batch of PDFs..."
+                    className="w-full p-4 h-40 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none"
+                    disabled={loading || files.length > 0}
+                  />
                   <div className="flex items-center space-x-4">
-                    <input type="file" accept=".pdf" multiple onChange={(e) => setFiles(Array.from(e.target.files))} className="hidden" ref={fileInputRef} />
-                    
-                    <button type="button" onClick={() => fileInputRef.current.click()} className={`flex items-center space-x-2 px-6 py-3.5 rounded-2xl border font-bold transition-all ${files.length > 0 ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'}`}>
-                        <FileUp className="w-5 h-5" />
-                        <span>{files.length > 0 ? `${files.length} Files Selected` : 'Batch PDFs'}</span>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      multiple
+                      onChange={(e) => setFiles(Array.from(e.target.files))}
+                      className="hidden"
+                      ref={fileInputRef}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current.click()}
+                      className={`flex items-center space-x-2 px-6 py-3.5 rounded-2xl border font-bold transition-all ${files.length > 0 ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'}`}
+                    >
+                      <FileUp className="w-5 h-5" />
+                      <span>{files.length > 0 ? `${files.length} File${files.length > 1 ? 's' : ''} Selected` : 'Batch PDFs'}</span>
                     </button>
-                    
-                    <button type="submit" disabled={loading || (!inputText.trim() && files.length === 0)} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-2xl font-black tracking-wide transition-all disabled:opacity-50 shadow-lg shadow-indigo-600/30 active:scale-[0.98]">
-                        {loading ? 'Processing Batch / Generating AI Summaries...' : 'Execute Deep Analysis'}
+                    <button
+                      type="submit"
+                      disabled={loading || (!inputText.trim() && files.length === 0)}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-2xl font-black tracking-wide transition-all disabled:opacity-50 shadow-lg shadow-indigo-600/30 active:scale-[0.98]"
+                    >
+                      {loading ? 'Processing / Generating AI Summaries…' : 'Execute Deep Analysis'}
                     </button>
                   </div>
                 </form>
               </section>
 
-              <button onClick={() => setShowTelemetry(!showTelemetry)} className="w-full flex items-center justify-between p-4 bg-slate-100/50 hover:bg-slate-100 border border-slate-200 rounded-2xl text-slate-600 font-bold transition-colors">
-                <div className="flex items-center gap-2"><Activity className="w-5 h-5 text-indigo-500" /> System Telemetry & Charts</div>
+              {/* Telemetry toggle */}
+              <button
+                onClick={() => setShowTelemetry(!showTelemetry)}
+                className="w-full flex items-center justify-between p-4 bg-slate-100/50 hover:bg-slate-100 border border-slate-200 rounded-2xl text-slate-600 font-bold transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-indigo-500" /> System Telemetry &amp; Charts
+                </div>
                 {showTelemetry ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
               </button>
 
@@ -203,7 +357,7 @@ function App() {
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                           <XAxis dataKey="time" fontSize={10} tickMargin={10} stroke="#94a3b8" />
                           <YAxis domain={[0, 1]} fontSize={10} stroke="#94a3b8" />
-                          <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                          <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
                           <Bar dataKey="subjectivity" fill="#10b981" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -212,71 +366,113 @@ function App() {
                 </section>
               )}
 
-              {/* NEW GLOBAL AI ACTION SUMMARY SECTION */}
-              <button onClick={() => setShowAi(!showAi)} className="w-full flex items-center justify-between p-4 bg-indigo-50/50 hover:bg-indigo-100 border border-indigo-100 rounded-2xl text-indigo-800 font-bold transition-colors">
-                <div className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-indigo-600" /> Latest AI Action Summary</div>
+              {/* AI summary toggle */}
+              <button
+                onClick={() => setShowAi(!showAi)}
+                className="w-full flex items-center justify-between p-4 bg-indigo-50/50 hover:bg-indigo-100 border border-indigo-100 rounded-2xl text-indigo-800 font-bold transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-600" /> Latest AI Action Summary
+                </div>
                 {showAi ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
               </button>
 
               {showAi && history.length > 0 && (
                 <section className="bg-white p-6 rounded-3xl shadow-sm border border-indigo-100 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-500 ease-out fill-mode-both">
                   <p className="text-sm text-indigo-900 font-semibold leading-relaxed">
-                      {history[history.length - 1]?.ai_summary || "AI Data Missing - Check Groq API Key or Backend Logs."}
+                    {history[0]?.ai_summary || "AI Data Missing — Check Groq API Key or Backend Logs."}
                   </p>
                 </section>
               )}
             </div>
 
+            {/* Right column — Intelligence Feed */}
             <div className="lg:col-span-1">
               <section className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 h-full max-h-[850px] overflow-y-auto custom-scrollbar">
                 <h2 className="text-lg font-black mb-6 flex items-center justify-between text-slate-800 sticky top-0 bg-white pb-4 border-b border-slate-100 z-10">
                   <span>Intelligence Feed</span>
-                  <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-md font-bold">{history.length}</span>
+                  <div className="flex items-center gap-2">
+                    {history.length > 0 && (
+                      <button
+                        onClick={downloadCSV}
+                        className="flex items-center gap-1 text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white px-2.5 py-1.5 rounded-lg transition-all"
+                        title="Export history as CSV"
+                      >
+                        <Table2 className="w-3 h-3" /> CSV
+                      </button>
+                    )}
+                    <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-md font-bold">{history.length}</span>
+                  </div>
                 </h2>
                 <div className="space-y-5 mt-2">
                   {history.map((item) => (
-                    <div key={item.id} className="group p-5 bg-white border-2 border-slate-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all duration-300 relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div
+                      key={item.id}
+                      className="group p-5 bg-white border-2 border-slate-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all duration-300 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="flex justify-between items-start mb-3">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID: 0x0{item.id}</span>
-                        <button onClick={() => downloadProfessionalPDF(item)} className="text-indigo-600 hover:text-white hover:bg-indigo-600 transition-all flex items-center gap-1 text-[10px] font-bold bg-indigo-50 px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0 duration-200"><Download className="w-3 h-3" /> Report</button>
+                        <button
+                          onClick={() => downloadProfessionalPDF(item)}
+                          className="text-indigo-600 hover:text-white hover:bg-indigo-600 transition-all flex items-center gap-1 text-[10px] font-bold bg-indigo-50 px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0 duration-200"
+                        >
+                          <Download className="w-3 h-3" /> Report
+                        </button>
                       </div>
                       <p className="text-sm text-slate-600 line-clamp-3 mb-4 leading-relaxed font-medium">"{item.original_text}"</p>
-
                       <div className="flex flex-wrap gap-2">
-                          <div className={`px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide border ${item.sentiment_label === 'Positive' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : item.sentiment_label === 'Negative' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{item.sentiment_label}</div>
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md text-[10px] font-bold"><FileText className="w-3 h-3" /> {item.readability_grade}</div>
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-md text-[10px] font-bold"><Scale className="w-3 h-3" /> {item.subjectivity > 0.5 ? 'Opinion' : 'Factual'}</div>
+                        <div className={`px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide border ${item.sentiment_label === 'Positive' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : item.sentiment_label === 'Negative' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                          {item.sentiment_label}
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md text-[10px] font-bold">
+                          <FileText className="w-3 h-3" /> {item.readability_grade}
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-md text-[10px] font-bold">
+                          <Scale className="w-3 h-3" /> {item.subjectivity > 0.5 ? 'Opinion' : 'Factual'}
+                        </div>
                       </div>
                     </div>
                   ))}
+                  {history.length === 0 && (
+                    <p className="text-center text-slate-400 text-sm py-10">
+                      No analyses yet. Submit some text or a PDF above.
+                    </p>
+                  )}
                 </div>
               </section>
             </div>
           </div>
+
         ) : (
+          // Admin panel
           <section className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-slate-900 p-8 text-white flex items-center justify-between">
-                <div><h2 className="text-2xl font-black flex items-center gap-3"><Users className="w-8 h-8 text-indigo-400" /> System Registry</h2></div>
-                <div className="text-5xl font-black text-indigo-500/50">{allUsers.length}</div>
+              <div>
+                <h2 className="text-2xl font-black flex items-center gap-3">
+                  <Users className="w-8 h-8 text-indigo-400" /> System Registry
+                </h2>
+                <p className="text-slate-400 text-sm mt-1">All registered identities</p>
+              </div>
+              <div className="text-5xl font-black text-indigo-500/50">{allUsers.length}</div>
             </div>
             <div className="p-8">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="text-slate-400 text-xs uppercase tracking-widest border-b border-slate-100">
-                            <th className="pb-4 font-black">UUID</th>
-                            <th className="pb-4 font-black">Intelligence Identity</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                        {allUsers.map((u) => (
-                            <tr key={u.id} className="group hover:bg-slate-50 transition-all">
-                                <td className="py-4 font-mono text-xs text-slate-400">0x0{u.id}</td>
-                                <td className="py-4 font-bold text-slate-800">{u.username}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-slate-400 text-xs uppercase tracking-widest border-b border-slate-100">
+                    <th className="pb-4 font-black">UUID</th>
+                    <th className="pb-4 font-black">Intelligence Identity</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {allUsers.map((u) => (
+                    <tr key={u.id} className="group hover:bg-slate-50 transition-all">
+                      <td className="py-4 font-mono text-xs text-slate-400">0x0{u.id}</td>
+                      <td className="py-4 font-bold text-slate-800">{u.username}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         )}
