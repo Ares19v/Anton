@@ -388,7 +388,7 @@ Anton/
 
 <div align="center">
 
-**Built with 🤖 & ☕ by [Devansh Tyagi](https://github.com/Ares19v)**
+**Built by [Devansh Tyagi](https://github.com/Ares19v)**
 
 *If you found this project useful, consider giving it a ⭐*
 
