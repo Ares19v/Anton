@@ -9,7 +9,6 @@ color 0A
 set "PROJECT_DIR=%~dp0"
 set "BACKEND_DIR=%PROJECT_DIR%backend"
 set "FRONTEND_DIR=%PROJECT_DIR%frontend"
-set "VENV_ACTIVATE=%BACKEND_DIR%\venv\Scripts\activate.bat"
 
 echo.
 echo  ============================================================
@@ -27,18 +26,31 @@ if not exist "%FRONTEND_DIR%" (
     echo  [ERROR] Frontend folder not found at: %FRONTEND_DIR%
     pause & exit /b 1
 )
-if not exist "%VENV_ACTIVATE%" (
-    echo  [ERROR] Virtual environment not found. Run: python -m venv venv inside /backend
+
+:: --- Check for .env file ---
+if not exist "%BACKEND_DIR%\.env" (
+    echo  [WARN] No .env file found. Copying from .env.example...
+    copy "%BACKEND_DIR%\.env.example" "%BACKEND_DIR%\.env" >nul
+    echo  [WARN] Please edit backend\.env and add your GROQ_API_KEY.
+    start notepad "%BACKEND_DIR%\.env"
     pause & exit /b 1
 )
 
-:: --- Launch Backend in a new window ---
+:: --- Check if uvicorn is available ---
+python -m uvicorn --version >nul 2>&1
+if errorlevel 1 (
+    echo  [SETUP] Installing Python dependencies ^(first-time setup, ~1-2 min^)...
+    python -m pip install -r "%BACKEND_DIR%\requirements.txt" --quiet
+    python "%BACKEND_DIR%\download_data.py"
+)
+
+:: --- Launch Backend in a new window using system python ---
 echo  [1/3] Starting FastAPI Backend on http://localhost:8000 ...
-start "ANTON Backend" cmd /k "cd /d "%BACKEND_DIR%" && call venv\Scripts\activate.bat && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+start "ANTON Backend" cmd /k "cd /d "%BACKEND_DIR%" && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
 :: --- Wait for backend to spin up ---
-echo  [2/3] Waiting for backend to initialise (5s)...
-timeout /t 5 /nobreak >nul
+echo  [2/3] Waiting for backend to initialise (6s)...
+timeout /t 6 /nobreak >nul
 
 :: --- Launch Frontend in a new window ---
 echo  [3/3] Starting React Frontend on http://localhost:5173 ...
