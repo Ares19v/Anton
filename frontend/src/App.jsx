@@ -89,8 +89,8 @@ function App() {
   const handleAuth = async (e) => {
     e.preventDefault();
     try {
-      if (authMode === 'register') {
-        // 1. Register the account
+      if (authMode !== 'login') {
+        // Register the account
         await axios.post(`${API_BASE_URL}/register`, authData);
         // 2. Auto-login to receive a JWT token
         const loginRes = await axios.post(`${API_BASE_URL}/login`, authData);
