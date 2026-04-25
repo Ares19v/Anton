@@ -28,6 +28,7 @@ build/
 *.db
 *.sqlite
 *.sqlite3
+test_*.db
 
 # Debug / temp files
 db_fixed.txt

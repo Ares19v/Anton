@@ -44,8 +44,12 @@
 | **📄 PDF Intelligence** | Upload one or multiple PDF documents; ANTON extracts and analyzes the full text automatically |
 | **📊 Animated Telemetry Dashboard** | Interactive React dashboard with animated Recharts data visualizations and real-time score cards |
 | **📥 PDF Report Export** | Generate and download branded, formatted PDF reports of any analysis result using `jsPDF` |
-| **👤 User Registry & History** | Secure account system with persistent analysis history per user, stored in SQLite via SQLAlchemy ORM |
-| **🔐 Admin Panel** | Hidden developer view for monitoring system-wide user registry and growth metrics |
+| **📤 CSV Export** | Download your complete analysis history as a spreadsheet with one click |
+| **🔐 JWT Authentication** | Secure account system with bcrypt-hashed passwords and signed JWT access tokens (7-day expiry) |
+| **👤 User Registry & History** | Persistent analysis history per user, stored in SQLite via SQLAlchemy ORM |
+| **🛡️ Admin Panel** | Hidden developer view with `X-Admin-Key` header protection for monitoring system-wide metrics |
+| **🐳 Docker Support** | Fully containerized with `Dockerfile` and `docker-compose.yml` for one-command local deployment |
+| **✅ CI/CD Pipeline** | GitHub Actions runs the full pytest suite and frontend build on every push to `main` |
 | **🌐 Production Deployed** | Frontend on Vercel, backend on Render — live and accessible at all times |
 
 ---
@@ -347,40 +351,65 @@ The `render.yaml` in the `backend/` directory contains the full deployment confi
 
 ```
 Anton/
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # GitHub Actions — pytest + frontend build on every push
+│
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
-│   │   ├── main.py          # FastAPI app, routes & middleware
-│   │   ├── models.py        # SQLAlchemy ORM models (User, InsightRecord)
-│   │   ├── schemas.py       # Pydantic request/response schemas
-│   │   ├── database.py      # DB engine & session factory
-│   │   ├── crud.py          # Database query helpers
-│   │   └── processor.py     # NLP pipeline + Groq AI summarizer
+│   │   ├── auth.py          # bcrypt hashing + JWT creation/verification + auth dependency
+│   │   ├── crud.py          # Reusable database query helpers
+│   │   ├── database.py      # SQLAlchemy engine, session factory, DeclarativeBase
+│   │   ├── main.py          # FastAPI entry point — all routes & middleware
+│   │   ├── models.py        # ORM models (User, InsightRecord)
+│   │   ├── processor.py     # NLP pipeline + Groq AI summarizer
+│   │   └── schemas.py       # Pydantic schemas — request/response validation
+│   │
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── conftest.py      # Pytest fixtures, test env vars, DB cleanup
+│   │   └── test_api.py      # Full API test suite (25 tests across all routes)
+│   │
+│   ├── .dockerignore        # Prevents secrets/venv/cache from entering Docker image
+│   ├── .env.example         # Environment variable template
+│   ├── Dockerfile           # Python 3.11-slim production image
 │   ├── download_data.py     # NLTK corpus downloader script
-│   ├── requirements.txt     # Python dependencies (pinned)
-│   └── render.yaml          # Render.com deployment config
+│   ├── render.yaml          # Render.com deployment configuration
+│   └── requirements.txt     # Pinned Python dependencies
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx          # Main React app — all views & state
-│   │   ├── App.css          # Component styles
-│   │   ├── index.css        # Global styles
-│   │   └── main.jsx         # React entry point
-│   ├── index.html           # HTML shell
-│   ├── vite.config.js       # Vite + Tailwind build config
-│   └── package.json         # Node dependencies
+│   │   ├── App.jsx          # Main React app — JWT auth, dashboard, all views
+│   │   ├── App.css          # Custom scrollbar utility
+│   │   ├── index.css        # Global Tailwind CSS
+│   │   └── main.jsx         # React DOM entry point
+│   ├── .env.example         # Frontend environment variable template
+│   ├── index.html           # HTML shell with SEO meta tags
+│   ├── package.json         # Node dependencies
+│   └── vite.config.js       # Vite + Tailwind build config
 │
-└── README.md
+├── .gitignore               # Excludes .env, *.db, node_modules/, venv/
+├── CONTRIBUTING.md          # Contribution guide
+├── docker-compose.yml       # One-command local stack (backend + frontend)
+├── install.bat              # One-click dependency installer (Windows)
+├── launch_anton.bat         # One-click launcher — starts both services + browser
+├── LICENSE                  # MIT
+├── README.md
+├── SECURITY.md              # Security policy & responsible disclosure
+└── uninstall.bat            # One-click cleanup to free disk space
 ```
 
 ---
 
 ## 🔮 Roadmap
 
-- [ ] **JWT Authentication** — Replace plain-text password storage with hashed credentials and JWT tokens
+- [x] **JWT Authentication** — Bcrypt-hashed passwords, signed JWT tokens (7-day expiry), protected routes
+- [x] **CSV Export** — Download full analysis history as a spreadsheet
+- [x] **Docker Support** — Containerized with Dockerfile + docker-compose
+- [x] **CI/CD Pipeline** — GitHub Actions runs tests + build on every push
 - [ ] **Batch Processing Queue** — Background job queue for large multi-PDF uploads
 - [ ] **PostgreSQL Migration** — Swap SQLite for a production-grade PostgreSQL database
-- [ ] **Export to CSV** — Download analysis history as a spreadsheet
 - [ ] **Tone Classification** — Multi-label emotional tone tagging (e.g., Anger, Joy, Urgency)
 - [ ] **Dark Mode Toggle** — User-preference-aware theme switching
 

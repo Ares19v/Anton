@@ -2,8 +2,17 @@ services:
   - type: web
     name: anton-backend
     env: python
-    buildCommand: "pip install -r backend/requirements.txt"
-    startCommand: "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT"
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.10.0
+        value: 3.11.0
+      - key: GROQ_API_KEY
+        sync: false          # Set this in the Render dashboard → Environment
+      - key: SECRET_KEY
+        sync: false          # Generate with: openssl rand -hex 32
+      - key: ADMIN_KEY
+        sync: false          # Choose any secret string for admin access
+      - key: DATABASE_URL
+        value: sqlite:///./anton.db

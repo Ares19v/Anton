@@ -17,7 +17,7 @@ import logging
 import os
 
 import nltk
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -186,16 +186,20 @@ async def analyze(
 @app.get("/history/{user_id}", response_model=List[schemas.InsightResponse], tags=["History"])
 def get_history(
     user_id: int,
+    skip: int = 0,
+    limit: int = 50,
     db: Session = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id),
 ):
-    """Retrieve analysis history for the authenticated user."""
+    """Retrieve paginated analysis history for the authenticated user."""
     if current_user_id != user_id:
         raise HTTPException(status_code=403, detail="Access denied.")
     return (
         db.query(models.InsightRecord)
         .filter(models.InsightRecord.owner_id == user_id)
         .order_by(models.InsightRecord.created_at.desc())
+        .offset(skip)
+        .limit(limit)
         .all()
     )
 
@@ -245,7 +249,7 @@ def export_history_csv(
 
 @app.get("/admin/users", tags=["Admin"])
 def get_all_users(
-    x_admin_key: Optional[str] = None,
+    x_admin_key: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
     """List all registered users. Requires X-Admin-Key header."""
