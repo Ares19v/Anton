@@ -24,20 +24,20 @@ echo   First-time install takes ~3-5 minutes.
 echo  ============================================================
 echo.
 
-:: ── Step 1: Create venv ───────────────────────────────────────────────────────
-echo  [1/4] Creating Python virtual environment in backend\venv\ ...
-if not exist "%VENV_PYTHON%" (
-    "%PYTHON%" -m venv "%VENV_DIR%"
-    if errorlevel 1 (
-        echo.
-        echo  [ERROR] Failed to create venv.
-        echo          Make sure Python 3.10+ is installed and on your PATH.
-        pause & exit /b 1
-    )
-    echo  [OK  ] Virtual environment created.
-) else (
-    echo  [SKIP] venv already exists.
+:: ── Step 1: Create venv (always fresh) ──────────────────────────────────────────────
+echo  [1/4] Creating a clean Python virtual environment in backend\venv\ ...
+if exist "%VENV_DIR%" (
+    echo         Removing old venv to ensure a clean install...
+    rmdir /s /q "%VENV_DIR%"
 )
+"%PYTHON%" -m venv "%VENV_DIR%"
+if errorlevel 1 (
+    echo.
+    echo  [ERROR] Failed to create venv.
+    echo          Make sure Python 3.10+ is installed and on your PATH.
+    pause & exit /b 1
+)
+echo  [OK  ] Virtual environment created.
 echo.
 
 :: ── Step 2: Install Python packages into venv ─────────────────────────────────
