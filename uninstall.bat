@@ -56,8 +56,8 @@ if exist "%FRONTEND_DIR%\node_modules" (
 )
 echo.
 
-:: ── Step 4: Delete unused Linux venv ─────────────────────────────────────────
-echo  [4/4] Deleting backend\venv\ ^(unused Linux-style venv^)...
+:: ── Step 4: Delete backend venv ─────────────────────────────────────────────
+echo  [4/4] Deleting backend\venv\ ^(Python virtual environment — ~200 MB^)...
 if exist "%BACKEND_DIR%\venv" (
     rmdir /s /q "%BACKEND_DIR%\venv"
     echo  [OK ] venv deleted.
