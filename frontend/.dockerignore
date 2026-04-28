@@ -1,0 +1,24 @@
+# --- Node ---
+node_modules/
+dist/
+.cache/
+.parcel-cache/
+
+# --- Environment variables ---
+.env
+.env.local
+.env.production
+.env.development
+
+# --- Git ---
+.git/
+.gitignore
+
+# --- IDE / OS ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Docs (not needed in image) ---
+README.md
