@@ -64,6 +64,7 @@ function App() {
   useEffect(() => {
     if (user) fetchHistory();
     if (view === 'admin') fetchAllUsers();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, view]);
 
   // ── API helpers ────────────────────────────────────────────────────────────
@@ -160,7 +161,7 @@ function App() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch {
       alert('CSV export failed.');
     }
   };
