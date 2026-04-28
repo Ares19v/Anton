@@ -65,7 +65,7 @@ echo   Next step: make sure backend\.env exists.
 echo   If not, copy backend\.env.example to backend\.env
 echo   and fill in your GROQ_API_KEY.
 echo.
-echo   Then double-click launch_anton.bat to start the app.
+echo   Then double-click Run_Project.bat to start the app.
 echo  ============================================================
 echo.
 pause

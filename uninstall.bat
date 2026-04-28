@@ -71,8 +71,8 @@ echo  ============================================================
 echo   Cleanup complete! Your laptop is lighter now.
 echo.
 echo   To restore everything: run install.bat
-echo   To start Anton:        run launch_anton.bat
-echo   ^(launch_anton.bat will auto-install if packages are missing^)
+echo   To start Anton:        run Run_Project.bat
+echo   ^(Run_Project.bat will auto-install if packages are missing^)
 echo  ============================================================
 echo.
 pause

@@ -24,7 +24,7 @@ def get_ai_summary(text: str):
                 {"role": "system", "content": "You are Anton AI. Summarize the text in 1 sentence and provide 1 'Suggested Action' (e.g. Action: High Priority Response)."},
                 {"role": "user", "content": f"Analyze this: {text[:2000]}"}
             ],
-            model="llama3-8b-8192",
+            model="llama-3.1-8b-instant",
             max_tokens=100
         )
         return response.choices[0].message.content

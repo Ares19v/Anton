@@ -387,6 +387,7 @@ Anton/
 │   │   ├── index.css        # Global Tailwind CSS
 │   │   └── main.jsx         # React DOM entry point
 │   ├── .env.example         # Frontend environment variable template
+│   ├── Dockerfile           # Multi-stage nginx production image
 │   ├── index.html           # HTML shell with SEO meta tags
 │   ├── package.json         # Node dependencies
 │   └── vite.config.js       # Vite + Tailwind build config
@@ -395,7 +396,7 @@ Anton/
 ├── CONTRIBUTING.md          # Contribution guide
 ├── docker-compose.yml       # One-command local stack (backend + frontend)
 ├── install.bat              # One-click dependency installer (Windows)
-├── launch_anton.bat         # One-click launcher — starts both services + browser
+├── Run_Project.bat          # One-click launcher — starts both services + browser
 ├── LICENSE                  # MIT
 ├── README.md
 ├── SECURITY.md              # Security policy & responsible disclosure

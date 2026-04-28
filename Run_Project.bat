@@ -22,7 +22,7 @@ if not exist "%BACKEND_DIR%\.env" (
     echo         Copying from .env.example — please fill in GROQ_API_KEY.
     copy "%BACKEND_DIR%\.env.example" "%BACKEND_DIR%\.env" >nul
     start notepad "%BACKEND_DIR%\.env"
-    echo  Edit the file that just opened, save it, then re-run this launcher.
+    echo  Edit the file that just opened, save it, then re-run Run_Project.bat.
     pause & exit /b 1
 )
 

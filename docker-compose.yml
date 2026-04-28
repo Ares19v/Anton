@@ -18,20 +18,16 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # ANTON Frontend — React / Vite
+  # ANTON Frontend — React / Vite (nginx)
   # ---------------------------------------------------------------------------
   frontend:
-    image: node:20-alpine
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
     container_name: anton_frontend
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8000
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+      - "5173:80"
     depends_on:
       - backend
     restart: unless-stopped

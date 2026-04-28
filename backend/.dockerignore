@@ -1,0 +1,39 @@
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+
+# --- Virtual environments ---
+venv/
+.venv/
+
+# --- Secrets & config ---
+.env
+*.env
+
+# --- Databases ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Test artifacts ---
+test_*.db
+
+# --- OS & IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Git ---
+.git/
+.gitignore
+
+# --- Docs (not needed in image) ---
+README.md
+CONTRIBUTING.md
+SECURITY.md
+LICENSE
