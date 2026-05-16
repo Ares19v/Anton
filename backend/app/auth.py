@@ -1,5 +1,5 @@
 """
-auth.py — ANTON Security Module
+auth.py — EMOTICORE Security Module
 Handles: bcrypt password hashing + JWT access token lifecycle
 """
 
@@ -15,7 +15,7 @@ from fastapi.security import OAuth2PasswordBearer
 # ---------------------------------------------------------------------------
 # Config — values come from environment variables (see .env.example)
 # ---------------------------------------------------------------------------
-SECRET_KEY: str = os.environ.get("SECRET_KEY", "anton-insecure-dev-key-change-before-prod")
+SECRET_KEY: str = os.environ.get("SECRET_KEY", "emoticore-insecure-dev-key-change-before-prod")
 ALGORITHM: str = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS: int = 7
 

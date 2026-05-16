@@ -1,4 +1,4 @@
-"""database.py — SQLAlchemy engine and session factory for ANTON."""
+"""database.py — SQLAlchemy engine and session factory for EMOTICORE."""
 
 import os
 
@@ -15,7 +15,7 @@ load_dotenv()
 # Override with DATABASE_URL env var for PostgreSQL or other databases.
 # ---------------------------------------------------------------------------
 SQLALCHEMY_DATABASE_URL: str = os.environ.get(
-    "DATABASE_URL", "sqlite:///./anton.db"
+    "DATABASE_URL", "sqlite:///./emoticore.db"
 )
 
 # SQLite requires the check_same_thread=False workaround for FastAPI's

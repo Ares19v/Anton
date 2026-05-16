@@ -1,5 +1,5 @@
 # =============================================================================
-# ANTON — Intelligence Engine | Backend Requirements
+# EMOTICORE — Intelligence Engine | Backend Requirements
 # Python 3.10+  |  Install: pip install -r requirements.txt
 # =============================================================================
 

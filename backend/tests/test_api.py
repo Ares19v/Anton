@@ -1,5 +1,5 @@
 """
-test_api.py — ANTON Backend API Test Suite
+test_api.py — EMOTICORE Backend API Test Suite
 
 Tests every route for correct behaviour, auth enforcement, and edge cases.
 Run with: pytest tests/ -v  (from the backend/ directory)

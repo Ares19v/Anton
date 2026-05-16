@@ -1,5 +1,5 @@
 @echo off
-title ANTON — Intelligence Engine Launcher
+title EMOTICORE — Intelligence Engine Launcher
 color 0A
 
 :: ============================================================
@@ -23,7 +23,7 @@ if exist "%PY310%" (
 
 echo.
 echo  ============================================================
-echo   ^|  ANTON ^— Intelligence Engine                          ^|
+echo   ^|  EMOTICORE ^— Intelligence Engine                          ^|
 echo  ============================================================
 echo.
 
@@ -78,14 +78,14 @@ if not exist "%FRONTEND_DIR%\node_modules" (
 
 :: --- Launch Backend using venv ---
 echo  [3/4] Starting FastAPI Backend on http://localhost:8000 ...
-start "ANTON Backend" cmd /k "cd /d "%BACKEND_DIR%" && "%VENV_UVICORN%" app.main:app --reload --host 0.0.0.0 --port 8000"
+start "EMOTICORE Backend" cmd /k "cd /d "%BACKEND_DIR%" && "%VENV_UVICORN%" app.main:app --reload --host 0.0.0.0 --port 8000"
 
 echo  [    ] Waiting for backend to initialise ^(6s^)...
 timeout /t 6 /nobreak >nul
 
 :: --- Launch Frontend ---
 echo  [4/4] Starting React Frontend on http://localhost:5173 ...
-start "ANTON Frontend" cmd /k "cd /d "%FRONTEND_DIR%" && npm run dev"
+start "EMOTICORE Frontend" cmd /k "cd /d "%FRONTEND_DIR%" && npm run dev"
 
 echo  [    ] Waiting for frontend to compile ^(5s^)...
 timeout /t 5 /nobreak >nul
@@ -96,7 +96,7 @@ start "" "http://localhost:5173"
 
 echo.
 echo  ============================================================
-echo   Anton is running!
+echo   Emoticore is running!
 echo   Frontend : http://localhost:5173
 echo   Backend  : http://localhost:8000
 echo   API Docs : http://localhost:8000/docs

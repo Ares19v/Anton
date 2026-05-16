@@ -1,5 +1,5 @@
 """
-main.py — ANTON Intelligence Engine | FastAPI Application Entry Point
+main.py — EMOTICORE Intelligence Engine | FastAPI Application Entry Point
 
 Routes:
   GET  /                          Health check
@@ -38,7 +38,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
-logger = logging.getLogger("anton")
+logger = logging.getLogger("emoticore")
 
 # ---------------------------------------------------------------------------
 # NLTK corpora (downloaded once on startup)
@@ -52,7 +52,7 @@ for corpus in ["brown", "punkt", "punkt_tab", "averaged_perceptron_tagger"]:
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(
-    title="ANTON Intelligence Engine",
+    title="EMOTICORE Intelligence Engine",
     description="Transform text and documents into actionable insights.",
     version="6.0.0",
 )
@@ -80,7 +80,7 @@ def get_db():
 # ---------------------------------------------------------------------------
 # Admin auth dependency
 # ---------------------------------------------------------------------------
-ADMIN_KEY: str = os.environ.get("ADMIN_KEY", "anton-admin-dev-key")
+ADMIN_KEY: str = os.environ.get("ADMIN_KEY", "emoticore-admin-dev-key")
 
 
 def verify_admin(x_admin_key: Optional[str] = None):
@@ -239,7 +239,7 @@ def export_history_csv(
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=anton_history_{user_id}.csv"},
+        headers={"Content-Disposition": f"attachment; filename=emoticore_history_{user_id}.csv"},
     )
 
 

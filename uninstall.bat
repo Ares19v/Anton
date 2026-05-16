@@ -1,5 +1,5 @@
 @echo off
-title ANTON — Uninstall Dependencies
+title EMOTICORE — Uninstall Dependencies
 color 0C
 
 set "PROJECT_DIR=%~dp0"
@@ -8,7 +8,7 @@ set "FRONTEND_DIR=%PROJECT_DIR%frontend"
 
 echo.
 echo  ============================================================
-echo   ANTON — Dependency Uninstaller
+echo   EMOTICORE — Dependency Uninstaller
 echo.
 echo   This will remove:
 echo     - All Python packages listed in requirements.txt
@@ -71,7 +71,7 @@ echo  ============================================================
 echo   Cleanup complete! Your laptop is lighter now.
 echo.
 echo   To restore everything: run install.bat
-echo   To start Anton:        run Run_Project.bat
+echo   To start Emoticore:        run Run_Project.bat
 echo   ^(Run_Project.bat will auto-install if packages are missing^)
 echo  ============================================================
 echo.

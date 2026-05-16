@@ -1,4 +1,4 @@
-"""schemas.py — Pydantic request/response models for ANTON."""
+"""schemas.py — Pydantic request/response models for EMOTICORE."""
 
 from datetime import datetime
 from typing import List, Optional

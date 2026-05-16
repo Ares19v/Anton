@@ -19,7 +19,7 @@ Instead, report it privately by emailing **[your-email@example.com]** with:
 
 You can expect an acknowledgement within **48 hours** and a fix timeline within **7 days** for critical issues.
 
-## Security Practices in ANTON
+## Security Practices in EMOTICORE
 
 - **Passwords** are hashed with `bcrypt` via `passlib` — plain-text passwords are never stored.
 - **JWT tokens** are signed with `HS256` and expire after 7 days.

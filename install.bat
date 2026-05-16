@@ -1,5 +1,5 @@
 @echo off
-title ANTON — Install Dependencies
+title EMOTICORE — Install Dependencies
 color 0B
 
 set "PROJECT_DIR=%~dp0"
@@ -18,7 +18,7 @@ if exist "%PY310%" (
 
 echo.
 echo  ============================================================
-echo   ANTON — Dependency Installer
+echo   EMOTICORE — Dependency Installer
 echo   This installs all Python packages and Node modules.
 echo   First-time install takes ~3-5 minutes.
 echo  ============================================================

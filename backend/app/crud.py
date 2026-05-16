@@ -1,5 +1,5 @@
 """
-crud.py — ANTON Database Helpers
+crud.py — EMOTICORE Database Helpers
 
 Note: The primary business logic (NLP analysis, JWT auth, route handling)
 lives directly in main.py for clarity in this single-service architecture.

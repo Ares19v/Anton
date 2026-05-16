@@ -30,7 +30,7 @@ const setupAxiosInterceptors = (onUnauthorized) => {
 };
 
 function App() {
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('anton_user')) || null);
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('emoticore_user')) || null);
   const [authMode, setAuthMode] = useState('login');
   const [authData, setAuthData] = useState({ username: '', password: '' });
   const [view, setView] = useState('dashboard');
@@ -57,7 +57,7 @@ function App() {
     setupAxiosInterceptors(() => {
       // Token expired or invalid — clear the session silently
       setUser(null);
-      localStorage.removeItem('anton_user');
+      localStorage.removeItem('emoticore_user');
     });
   }, []);
 
@@ -80,7 +80,7 @@ function App() {
       // Admin key is hardcoded to the dev default; real deployments should
       // prompt for it or store it in an env var.
       const res = await axios.get(`${API_BASE_URL}/admin/users`, {
-        headers: { 'X-Admin-Key': import.meta.env.VITE_ADMIN_KEY || 'anton-admin-dev-key' }
+        headers: { 'X-Admin-Key': import.meta.env.VITE_ADMIN_KEY || 'emoticore-admin-dev-key' }
       });
       setAllUsers(res.data);
     } catch (err) { console.error(err); }
@@ -101,7 +101,7 @@ function App() {
           access_token: loginRes.data.access_token,
         };
         setUser(userData);
-        localStorage.setItem('anton_user', JSON.stringify(userData));
+        localStorage.setItem('emoticore_user', JSON.stringify(userData));
       } else {
         const res = await axios.post(`${API_BASE_URL}/login`, authData);
         const userData = {
@@ -110,7 +110,7 @@ function App() {
           access_token: res.data.access_token,
         };
         setUser(userData);
-        localStorage.setItem('anton_user', JSON.stringify(userData));
+        localStorage.setItem('emoticore_user', JSON.stringify(userData));
       }
     } catch (err) {
       alert(err.response?.data?.detail || 'Authentication failed.');
@@ -119,7 +119,7 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('anton_user');
+    localStorage.removeItem('emoticore_user');
   };
 
   // ── Analysis ──────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ function App() {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `anton_history_${user.id}.csv`);
+      link.setAttribute('download', `emoticore_history_${user.id}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -170,7 +170,7 @@ function App() {
   const downloadProfessionalPDF = (item) => {
     const doc = new jsPDF();
     doc.setFillColor(79, 70, 229); doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFontSize(24); doc.setFont("helvetica", "bold"); doc.text("ANTON", 20, 25);
+    doc.setTextColor(255, 255, 255); doc.setFontSize(24); doc.setFont("helvetica", "bold"); doc.text("EMOTICORE", 20, 25);
     doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text("INTELLIGENCE ENGINE REPORT", 60, 25);
     doc.setTextColor(100, 100, 100); doc.text(`Generated: ${new Date(item.created_at).toLocaleString()}`, 20, 50); doc.text(`Analyst: ${user.username}`, 150, 50);
     doc.setDrawColor(226, 232, 240); doc.line(20, 55, 190, 55);
@@ -188,7 +188,7 @@ function App() {
     doc.line(20, 140, 190, 140); doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.text("Source Document", 20, 155);
     doc.setFontSize(10); doc.setFont("helvetica", "normal");
     const splitText = doc.splitTextToSize(item.original_text, 170); doc.text(splitText, 20, 165);
-    doc.save(`Anton_Report_${item.id}.pdf`);
+    doc.save(`Emoticore_Report_${item.id}.pdf`);
   };
 
   // ── Chart data ────────────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ function App() {
           <div className="inline-block bg-indigo-600 p-3 rounded-2xl mb-4">
             <BrainCircuit className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-black text-slate-900">ANTON</h1>
+          <h1 className="text-3xl font-black text-slate-900">EMOTICORE</h1>
           <p className="text-slate-500 text-sm mb-8">Intelligence Engine v6.0 PRO</p>
           <form onSubmit={handleAuth} className="space-y-4 text-left">
             <input
@@ -246,7 +246,7 @@ function App() {
             <div className="bg-indigo-600 p-2 rounded-xl shadow-md">
               <BrainCircuit className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-4xl font-black tracking-tighter text-slate-900">ANTON</h1>
+            <h1 className="text-4xl font-black tracking-tighter text-slate-900">EMOTICORE</h1>
           </div>
           <nav className="flex items-center space-x-2 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200">
             <button
@@ -291,7 +291,7 @@ function App() {
                   <textarea
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    placeholder="Feed Anton raw text or attach a batch of PDFs..."
+                    placeholder="Feed Emoticore raw text or attach a batch of PDFs..."
                     className="w-full p-4 h-40 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none"
                     disabled={loading || files.length > 0}
                   />

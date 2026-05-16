@@ -1,11 +1,11 @@
 <div align="center">
 
-# ⚡ ANTON — Intelligence Engine
+# ⚡ Emoticore — Intelligence Engine
 
 ### *Transform text and documents into actionable insights, powered by NLP and Groq AI*
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Frontend-7C3AED?style=for-the-badge)](https://anton-gilt-iota.vercel.app)
-[![API Status](https://img.shields.io/badge/🚀_API-Backend_Live-10B981?style=for-the-badge)](https://anton-backend-e4iz.onrender.com/)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Frontend-7C3AED?style=for-the-badge)](https://Emoticore-gilt-iota.vercel.app)
+[![API Status](https://img.shields.io/badge/🚀_API-Backend_Live-10B981?style=for-the-badge)](https://Emoticore-backend-e4iz.onrender.com/)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -13,7 +13,7 @@
 
 <br/>
 
-> **ANTON** is a production-deployed, full-stack intelligence platform that converts raw text and PDF documents into deep analytical insights — combining classical NLP scoring with a live LLM-powered AI summary engine (via Groq + LLaMA 3).
+> **Emoticore** is a production-deployed, full-stack intelligence platform that converts raw text and PDF documents into deep analytical insights — combining classical NLP scoring with a live LLM-powered AI summary engine (via Groq + LLaMA 3).
 
 <br/>
 
@@ -41,7 +41,7 @@
 |---|---|
 | **🧠 NLP Analysis Engine** | Scores text for Sentiment Polarity (`-1.0 → +1.0`), Subjectivity (Fact vs. Opinion), and Readability Grade Level |
 | **🤖 AI Summary (Groq + LLaMA 3)** | Each analysis is enhanced with a 1-sentence LLM summary and a suggested action, powered by the Groq API |
-| **📄 PDF Intelligence** | Upload one or multiple PDF documents; ANTON extracts and analyzes the full text automatically |
+| **📄 PDF Intelligence** | Upload one or multiple PDF documents; Emoticore extracts and analyzes the full text automatically |
 | **📊 Animated Telemetry Dashboard** | Interactive React dashboard with animated Recharts data visualizations and real-time score cards |
 | **📥 PDF Report Export** | Generate and download branded, formatted PDF reports of any analysis result using `jsPDF` |
 | **📤 CSV Export** | Download your complete analysis history as a spreadsheet with one click |
@@ -58,7 +58,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                           ANTON v5.0 Pro                            │
+│                           Emoticore v5.0 Pro                            │
 │                      Full-Stack Intelligence Engine                  │
 └─────────────────────────────────────────────────────────────────────┘
                                    │
@@ -90,7 +90,7 @@
 
 ## 🧠 How It Works
 
-Every text or PDF submitted to ANTON flows through a **multi-stage analysis pipeline**:
+Every text or PDF submitted to Emoticore flows through a **multi-stage analysis pipeline**:
 
 ```
 User Input (Text / PDF Upload)
@@ -170,7 +170,7 @@ User Input (Text / PDF Upload)
 
 ## 📡 API Reference
 
-**Base URL:** `https://anton-backend-e4iz.onrender.com`
+**Base URL:** `https://Emoticore-backend-e4iz.onrender.com`
 
 ### `GET /`
 > Health check — returns API status.
@@ -264,8 +264,8 @@ User Input (Text / PDF Upload)
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Ares19v/Anton.git
-cd Anton
+git clone https://github.com/Ares19v/Emoticore.git
+cd Emoticore
 ```
 
 ---
@@ -350,7 +350,7 @@ The `render.yaml` in the `backend/` directory contains the full deployment confi
 ## 📁 Project Structure
 
 ```
-Anton/
+Emoticore/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml           # GitHub Actions — pytest + frontend build on every push

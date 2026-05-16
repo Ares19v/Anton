@@ -1,23 +1,23 @@
-# Contributing to ANTON
+# Contributing to EMOTICORE
 
 Thank you for considering a contribution! Here's how to get started.
 
 ## Reporting Bugs
 
 Before opening an issue, please:
-1. Search [existing issues](https://github.com/Ares19v/Anton/issues) to avoid duplicates.
+1. Search [existing issues](https://github.com/Ares19v/Emoticore/issues) to avoid duplicates.
 2. Include the steps to reproduce, expected vs. actual behaviour, and your OS/Python/Node versions.
 
 ## Suggesting Features
 
-Open a [GitHub Discussion](https://github.com/Ares19v/Anton/discussions) or an issue tagged **`enhancement`**. Describe the use-case and why it would benefit other users.
+Open a [GitHub Discussion](https://github.com/Ares19v/Emoticore/discussions) or an issue tagged **`enhancement`**. Describe the use-case and why it would benefit other users.
 
 ## Development Setup
 
 ```bash
 # 1 — Fork & clone
-git clone https://github.com/<your-username>/Anton.git
-cd Anton
+git clone https://github.com/<your-username>/Emoticore.git
+cd Emoticore
 
 # 2 — Backend
 cd backend

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: anton-backend
+    name: emoticore-backend
     env: python
     rootDir: backend
     buildCommand: "pip install -r requirements.txt"
@@ -15,4 +15,4 @@ services:
       - key: ADMIN_KEY
         sync: false          # Choose any secret string for admin access
       - key: DATABASE_URL
-        value: sqlite:///./anton.db
+        value: sqlite:///./emoticore.db
