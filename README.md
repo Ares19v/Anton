@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ Emoticore — Intelligence Engine
+# Emoticore — Intelligence Engine
 
 ### *Transform text and documents into actionable insights, powered by NLP and Groq AI*
 
